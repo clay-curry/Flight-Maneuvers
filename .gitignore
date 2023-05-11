@@ -1,0 +1,8 @@
+# do not commit python bytecode
+__pycache__
+
+# do not commit data
+maneuver_dataset*
+
+# do not commit local experiments
+experiments
