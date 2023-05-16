@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from lightning.pytorch import LightningModule
 
-from anne.dataset import MANEUVERS
+from src.data_module import MANEUVERS
 
-class SE2_ResNetBlock(nn.Module):
+class SE3_ResNetBlock(nn.Module):
     def __init__(self, num_blk, c_in, k_size, c_out=-1):
         super().__init__()
         # Network representing F
@@ -23,7 +23,7 @@ class SE2_ResNetBlock(nn.Module):
         return output
 
 
-class SE2_PreActResNetBlock(nn.Module):
+class SE3_PreActResNetBlock(nn.Module):
     def __init__(self, n_blk, c_in, k_size, c_out=-1):
         super().__init__()
         # Network representing F
@@ -38,11 +38,11 @@ class SE2_PreActResNetBlock(nn.Module):
 
 
 resnet_block_types = {
-    "ResNetBlock": SE2_ResNetBlock,
-    "PreActResNetBlock": SE2_PreActResNetBlock
+    "ResNetBlock": SE3_ResNetBlock,
+    "PreActResNetBlock": SE3_PreActResNetBlock
 }
 
-class SE2_ResNet(LightningModule):
+class SE3_ResNet(LightningModule):
 
     def __init__(self, num_blocks=[3,3,3], k_size=[3,3,3], c_hidden=[3,3,3], block_type="ResNetBlock", **kwargs):
         """

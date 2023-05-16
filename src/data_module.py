@@ -7,9 +7,10 @@ import pandas as pd
 from typing import List, Sized, Iterator
 from lightning import LightningDataModule
 
-from anne.signal import sample_timeseries
-
 MANEUVERS = ['takeoff', 'turn', 'line', 'orbit', 'landing']
+
+from src import DATASET_PATH
+from src.signal import sample_timeseries
 
 # each training example consists of a variable-length, simulated flight trajectory with labeled maneuvers at each timestep
 class FlightTrajectoryDataset(torch.utils.data.Dataset):
@@ -49,9 +50,7 @@ class DirectorySampler(torch.utils.data.Sampler):
     
 class FlightTrajectoryDataModule(LightningDataModule):
     
-    tokenize = np.vectorize(lambda id: MANEUVERS.index(id))
-
-    def __init__(self, data_dir, num_train, num_valid, num_test, batch_size) -> None:
+    def __init__(self, data_dir=DATASET_PATH, num_train=1, num_valid=1, num_test=1, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
         super().__init__()
         self.save_hyperparameters()
 
@@ -60,20 +59,13 @@ class FlightTrajectoryDataModule(LightningDataModule):
         splits = np.cumsum([num_train, num_valid, num_test])
         train_examples, valid_examples, test_examples = [f for f in np.split(random.sample(files, len(files)), splits)][:-1]
         self.train_set, self.val_set, self.test_set = (
-            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in train_examples], sampling_period=60, max_sample_length=256),
-            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in valid_examples], sampling_period=60, max_sample_length=256),
-            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in test_examples], sampling_period=60, max_sample_length=256)
+            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in train_examples], sampling_period=sampling_period, max_sample_length=max_sample_length),
+            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in valid_examples], sampling_period=sampling_period, max_sample_length=max_sample_length),
+            FlightTrajectoryDataset([os.path.join(self.hparams.data_dir, f) for f in test_examples], sampling_period=sampling_period, max_sample_length=max_sample_length)
         )
 
     def tokenize_segments(self, segs):
-        trajectory_list = []
-        maneuver_list = []
-        for t in segs[0]:
-            trajectory = torch.from_numpy(t[['x','y','z','vx','vy','vz']].to_numpy(np.float32))
-            manever = torch.from_numpy(self.tokenize(t['maneuver'].to_numpy()))
-            trajectory_list.append(trajectory)
-            maneuver_list.append(manever)
-        return trajectory_list, maneuver_list
+        return segs[0]
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(self.train_set, sampler=DirectorySampler(self.train_set.files, batch_size=self.hparams.batch_size), collate_fn=self.tokenize_segments, drop_last=True)
