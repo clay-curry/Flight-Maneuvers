@@ -16,13 +16,21 @@
 ### Todo List
 
 Project
-* ~~ implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application ~~ 
-* ~~ implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps ~~
-* ~~ implement `resnet.py` on a 1D signal (confirm convergence) ~~
+* <s>implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application </s>
+* <s>implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps </s>
+* <s>implement `resnet.py` (confirm convergence) </s>
 * implement `se2_resnet.py` on a 1D signal (confirm convergence)
 * implement `se3_resnet.py` on a 1D signal (confirm convergence)
-*  for each flight maneuver, list the resulting precision and recall values for each maneuver class together with confidence intervals
+* implement a suitable strategy for `neural_search` 
+* for each flight maneuver, list the resulting precision and recall values for each maneuver class together with confidence intervals
 * for each model, plot precision and recall values and show trends as training examples vary
+* evolve candidate models for `resnet.py`,  `se2_resnet.py`, and `se3_resnet.py`' by: 
+  - fitness function: - Binary Cross-Entropy Loss, 
+  - varying the number of convolution layers, kernel size, kernel width, fully connected layer width
+  - constaining the a weight space to have fixed computer memory
+  - the same training set, validation set, and test set 
+* with each candidate, obtain confidence intervals for precision and recall (per maneuver class) using bootstrapping
+* plot a table that, for each flight maneuver, reports precision and recall for each maneuver class together with confidence intervals
 
 Report
 * describe related works and their relation to concepts in representation theory and harmonic function theory 
