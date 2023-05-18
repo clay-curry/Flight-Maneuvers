@@ -14,9 +14,9 @@
 </div>
 
 ### Todo List
-* ~~ implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application ~~ 
-* ~~ implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps ~~
-* ~~ implement `resnet.py` (confirm convergence) ~~
+* <s>implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application </s>
+* <s>implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps </s>
+* <s>implement `resnet.py` (confirm convergence) </s>
 * implement `se2_resnet.py` (confirm convergence)
 * implement `se3_resnet.py` (confirm convergence)
 * determine an algorithm for `neural_search` 
