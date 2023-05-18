@@ -1,10 +1,10 @@
 import torch
-import torch.nn as nn
+import torch.nn as nn.
 import torch.nn.functional as F
 from lightning.pytorch import LightningModule
 
 from src.data_module import MANEUVERS
-from src.signal import *
+from src.utils import *
 
 class ResNetBlock(nn.Module):
     def __init__(self, num_blk, c_in, k_size, c_out=-1):
@@ -129,5 +129,5 @@ class ResNet(LightningModule):
         with torch.set_grad_enabled(False):            
             x, _ = preprocess_trajectory(trajectory_df)
             joint_dist = self.forward(x).softmax(-1)
-            joint_dist = joint_dist_to_joint_dataframe(joint_dist)
+            joint_dist = postprocess_joint(joint_dist)
             return joint_dist

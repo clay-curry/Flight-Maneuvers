@@ -1,15 +1,14 @@
 import os
-
 from src import EXPERIMENT_PATH
 from src.data_module import FlightTrajectoryDataModule, MANEUVERS
 from src.model.resnet import ResNet
-from scipy.ndimage import rotate
 
 import pandas as pd
-from dash.dependencies import Input, Output
 import plotly.express as px
-from dash import Dash, dcc, html
+from scipy.ndimage import rotate
 import plotly.graph_objects as go
+from dash import Dash, dcc, html
+from dash.dependencies import Input, Output
 
 dataloader = FlightTrajectoryDataModule(num_test=10).test_dataloader()
 

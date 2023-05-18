@@ -10,7 +10,7 @@ from lightning import LightningDataModule
 MANEUVERS = ['takeoff', 'turn', 'line', 'orbit', 'landing']
 
 from src import DATASET_PATH
-from src.signal import sample_timeseries
+from src.utils import sample_timeseries
 
 # each training example consists of a variable-length, simulated flight trajectory with labeled maneuvers at each timestep
 class FlightTrajectoryDataset(torch.utils.data.Dataset):
@@ -50,7 +50,7 @@ class DirectorySampler(torch.utils.data.Sampler):
     
 class FlightTrajectoryDataModule(LightningDataModule):
     
-    def __init__(self, data_dir=DATASET_PATH, num_train=1, num_valid=1, num_test=1, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
+    def __init__(self, num_train=1, num_valid=1, num_test=1, data_dir=DATASET_PATH, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
         super().__init__()
         self.save_hyperparameters()
 

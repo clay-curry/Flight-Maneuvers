@@ -6,8 +6,8 @@
 
 <br>
 
-[![Blog: Flight Maneuvers](https://img.shields.io/badge/Blog-Flight%20Maneuvers-blue)](https://claycurry.com/maneuvers)
-[![Flask Project Demo](https://img.shields.io/badge/Flask-Project%20Demo-ff69b4)](https://claycurry.com/maneuvers)
+[![Blog: Flight Maneuvers](https://img.shields.io/badge/Blog-Flight%20Maneuvers-blue)](https://claycurry.com/blog/maneuver)
+[![Flask Project Demo](https://img.shields.io/badge/Flask-Project%20Demo-ff69b4)](https://claycurry.com/blog/maneuvers)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/13U6SEHBlYxXKCvmLBXeERzIb5dt2lEfA?usp=sharing)
 [![Github Repo](https://img.shields.io/static/v1.svg?logo=github&label=repo&message=see%20project&color=blueviolet)](https://github.com/clay-curry/Flight-Maneuvers) 
 

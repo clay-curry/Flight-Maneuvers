@@ -1,16 +1,24 @@
-
-
 import torch
 import numpy as np
 import pandas as pd
 from math import inf
 
-from src.data_module import MANEUVERS
+from src import EXPERIMENT_PATH
 from src.data_module import MANEUVERS
 
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
+from src.model.resnet import ResNet
+from src.data_module import FlightTrajectoryDataModule
+
+import lightning as L
+from lightning.pytorch import Trainer
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import LearningRateMonitor
+
+
 
 def plot_scenario_topdown(true_df, pred_df):
     """ Plot the scenario in 2D, with the true maneuver on the left and the predicted maneuver on the right.
@@ -86,8 +94,8 @@ def preprocess_trajectory(trajectory, target = None):
     trajectory['dvx'].iloc[0] = trajectory['dvy'].iloc[0] = trajectory['dvz'].iloc[0] = 0 
     return torch.tensor(trajectory.values, dtype=torch.float32), torch.tensor(maneuvers)
 
-def joint_dist_to_joint_dataframe(joint_dist):
-    """ converts a joint distribution tensor to a dataframe
+def postprocess_joint(joint_dist):
+    """ casts joint distribution to a dataframe, and appends the predicted maneuver
     """
     joint_df = pd.DataFrame({
             'takeoff': joint_dist[:, 0],
@@ -98,3 +106,25 @@ def joint_dist_to_joint_dataframe(joint_dist):
         })
     joint_df['maneuver'] = joint_df.idxmax(axis="columns")
     return joint_df
+
+
+
+def train(num_valid, max_steps, model, num_test=0, sampling_interval=30):
+    
+    # number of train examples to use per epoch
+    for NUM_TRAIN in [5, 10, 100]:
+        L.seed_everything(0)
+
+        datamodule = FlightTrajectoryDataModule(NUM_TRAIN, num_valid, num_test)
+
+        model = model(
+            k_size=[3] * 300, 
+            c_hidden=[36] * 300,
+            d_size=[5] * 300,
+            block_type="ResNetBlock"
+        )
+
+        logger = TensorBoardLogger(EXPERIMENT_PATH, name="resnet" + '-train-' + str(NUM_TRAIN))
+        lr_monitor = LearningRateMonitor(logging_interval='step')
+        trainer = Trainer(logger=logger, callbacks=[lr_monitor], log_every_n_steps=10, max_steps=MAX_STEPS)
+        trainer.fit(model, dataset)
