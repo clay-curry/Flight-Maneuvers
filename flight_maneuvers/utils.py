@@ -1,24 +1,20 @@
 import torch
 import numpy as np
 import pandas as pd
-from math import inf
 
-from src import EXPERIMENT_PATH
-from src.data_module import MANEUVERS
+import lightning as L
 
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from src.model.resnet import ResNet
-from src.data_module import FlightTrajectoryDataModule
 
-import lightning as L
-from lightning.pytorch import Trainer
-from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import LearningRateMonitor
+from flight_maneuvers import CHECKPOINT_PATH
+from flight_maneuvers.data_module import MANEUVERS
+from flight_maneuvers.modules.resnet import ResNet
+from flight_maneuvers.data_module import FlightTrajectoryDataModule
 
-
+tokenize_maneuvers = np.vectorize(lambda id: MANEUVERS.index(id))
 
 def plot_scenario_topdown(true_df, pred_df):
     """ Plot the scenario in 2D, with the true maneuver on the left and the predicted maneuver on the right.
@@ -45,31 +41,6 @@ def plot_scenario_topdown(true_df, pred_df):
     fig.update_layout(updatemenus=[dropdown_menu], legend=dict(yanchor="bottom", y=0.30, xanchor="left", x=0))
     fig.show()
 
-tokenize_maneuvers = np.vectorize(lambda id: MANEUVERS.index(id))
-
-def sample_timeseries(trajectory, sampling_period=1, max_length=inf):
-    """ loads and resamples a trajectory to a fixed sampling period and maximum length
-
-    Args:
-        trajectory: path to a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
-        sampling_period: the desired sampling period in seconds
-        max_length: the maximum length of the resampled trajectory
-
-    Returns:
-        a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
-    """
-    # load the trajectory and convert the 't' column to a DatetimeIndex
-    trajectory = pd.read_csv(trajectory)
-
-    # initialize resampled_trajectory with the first row of trajectory
-    resampled_trajectory = trajectory.iloc[::sampling_period]
-
-    # trim the trajectory to the desired maximum length
-    if len(resampled_trajectory) > max_length:
-        resampled_trajectory = resampled_trajectory.iloc[:max_length]
-
-    resampled_trajectory = resampled_trajectory.reset_index(drop=True)
-    return resampled_trajectory
 
 def preprocess_trajectory(trajectory, target = None):
     """ computes the delta of a trajectory
@@ -107,22 +78,24 @@ def postprocess_joint(joint_dist):
     joint_df['maneuver'] = joint_df.idxmax(axis="columns")
     return joint_df
 
-def train(num_valid, max_steps, model, num_test=0, sampling_interval=30):
+def test(model: torch.nn.Module, data_module: FlightTrajectoryDataModule):
+    total = 0
+    correct = 0
+
+    with torch.no_grad():
+        model.eval()
+        for i, (x, t) in enumerate(data_module.test_loader()):
+            
+            y = model(x)
+
+            _, prediction = torch.max(y.data, 1)
+            total += t.shape[0]
+            correct += (prediction == t).sum().item()
     
-    # number of train examples to use per epoch
-    for NUM_TRAIN in [5, 10, 100]:
-        L.seed_everything(0)
+    return correct/total*100
 
-        datamodule = FlightTrajectoryDataModule(NUM_TRAIN, num_valid, num_test)
 
-        model = model(
-            k_size=[3] * 300, 
-            c_hidden=[36] * 300,
-            d_size=[5] * 300,
-            block_type="ResNetBlock"
-        )
-
-        logger = TensorBoardLogger(EXPERIMENT_PATH, name="resnet" + '-train-' + str(NUM_TRAIN))
-        lr_monitor = LearningRateMonitor(logging_interval='step')
-        trainer = Trainer(logger=logger, callbacks=[lr_monitor], log_every_n_steps=10, max_steps=MAX_STEPS)
-        trainer.fit(model, dataset)
+def train(model: torch.nn.Module, model_hparams):
+     from flight_maneuvers.modules import FlightManeuverModule
+     model = FlightManeuverModule(model, model_hparams)
+     return model
