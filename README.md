@@ -14,15 +14,26 @@
 </div>
 
 ### Todo List
+
+Project
 * ~~ implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application ~~ 
 * ~~ implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps ~~
-* ~~ implement `resnet.py` (confirm convergence) ~~
-* implement `se2_resnet.py` (confirm convergence)
-* implement `se3_resnet.py` (confirm convergence)
-* determine an algorithm for `neural_search` 
-* evolve candidate models for `resnet.py`,  `se2_resnet.py`, and `se3_resnet.py`' using fitness function: Binary Cross-Entropy Loss; (varying num of convolution layers, kernel size, kernel width, fully connected layer width, the same training set, validation set, and test set) constained to a weight space with a given size in computer memory
-* with each best candidate, obtain confidence intervals for precision and recall (per maneuver class) using bootstrapping
-* plot a table that, for each flight maneuver, reports precision and recall for each maneuver class together with confidence intervals
+* ~~ implement `resnet.py` on a 1D signal (confirm convergence) ~~
+* implement `se2_resnet.py` on a 1D signal (confirm convergence)
+* implement `se3_resnet.py` on a 1D signal (confirm convergence)
+*  for each flight maneuver, list the resulting precision and recall values for each maneuver class together with confidence intervals
+* for each model, plot precision and recall values and show trends as training examples vary
+
+Report
+* describe related works and their relation to concepts in representation theory and harmonic function theory 
+* relate the physical symmetries of the label function to actions of $SE(3)$ and $SE(2)$ 
+* show the derivation for one `resnet`
+* show the derivation for one `se2_resnet` equivariant convolution layer 
+* show the derivation for one `se3_resnet` equivariant convolution layer
+* describe how models are evolved
+* explain trends, update claims in the abstract (if necessary), and describe how the findings support the hypothesis
+* conclusions and future work
+
 
 ## Description
 TODO
