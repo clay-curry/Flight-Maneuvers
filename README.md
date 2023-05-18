@@ -13,10 +13,20 @@
 
 </div>
 
+### Todo List
+* ~~ implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application ~~ 
+* ~~ implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps ~~
+* ~~ implement `resnet.py` (confirm convergence) ~~
+* implement `se2_resnet.py` (confirm convergence)
+* implement `se3_resnet.py` (confirm convergence)
+* determine an algorithm for `neural_search` 
+* evolve candidate models for `resnet.py`,  `se2_resnet.py`, and `se3_resnet.py`' using fitness function: Binary Cross-Entropy Loss; (varying num of convolution layers, kernel size, kernel width, fully connected layer width, the same training set, validation set, and test set) constained to a weight space with a given size in computer memory
+* with each best candidate, obtain confidence intervals for precision and recall (per maneuver class) using bootstrapping
+* plot a table that, for each flight maneuver, reports precision and recall for each maneuver class together with confidence intervals
 
 ## Description
-
 TODO
+
 
 ### Related Projects
 
@@ -70,7 +80,7 @@ Next, clone the repo, navigate to the project base, and install requirements,
 # clone project   
 git clone https://github.com/clay-curry/Flight-Maneuvers
 # enter project
-cd Flight-Faneuvers
+cd Flight-Maneuvers
 # install dependencies
 pip install -r requirements.txt
 ```

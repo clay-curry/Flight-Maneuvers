@@ -107,8 +107,6 @@ def postprocess_joint(joint_dist):
     joint_df['maneuver'] = joint_df.idxmax(axis="columns")
     return joint_df
 
-
-
 def train(num_valid, max_steps, model, num_test=0, sampling_interval=30):
     
     # number of train examples to use per epoch
