@@ -6,7 +6,7 @@ from flight_maneuvers.data_module import MANEUVERS
 
 class ResNetBlock(nn.Module):
 
-    def __init__(self, c_in, k_size, act_fn, subsample=False, c_out=-1):
+    def __init__(self, c_in, k_size, act_fn, c_out=-1):
         """
         Inputs:
             c_in - Number of input features
@@ -46,7 +46,8 @@ class PreActResNetBlock(nn.Module):
             c_out - Number of output features. Note that this is only relevant if subsample is True, as otherwise, c_out = c_in
         """
         super().__init__()
-
+        self.proj = nn.Conv1d(c_in, c_out, kernel_size=1, padding='same', bias=False)
+        self.act_fn = act_fn()
         # Network representing F
         self.net = nn.Sequential(
             nn.BatchNorm1d(c_in),
@@ -59,8 +60,7 @@ class PreActResNetBlock(nn.Module):
 
     def forward(self, x):
         z = self.net(x)
-        out = z + x
-        return out
+        return z + self.proj(x)
 
 
 resnet_block_types = {
@@ -162,13 +162,3 @@ class ResNet(nn.Module):
 
         x = self.output_net(x)
         return x
-
-"""    def forward(self, x):
-        x = torch.transpose(x, -1, -2).unsqueeze(0).contiguous()
-        x = self.input_bn(x)
-        x = self.conv_blocks(x)
-        x = torch.flatten(x, end_dim=1)
-        x = torch.transpose(x, -1, -2)
-        return self.output_net(x).squeeze(0)
-    
-"""

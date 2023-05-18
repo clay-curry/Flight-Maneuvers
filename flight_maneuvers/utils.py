@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 
 from flight_maneuvers import CHECKPOINT_PATH
 from flight_maneuvers.data_module import MANEUVERS
-from flight_maneuvers.modules.resnet import ResNet
+from flight_maneuvers.modules.resnet import ResNet, PreActResNetBlock
 from flight_maneuvers.data_module import FlightTrajectoryDataModule
 
 tokenize_maneuvers = np.vectorize(lambda id: MANEUVERS.index(id))
@@ -40,7 +40,6 @@ def plot_scenario_topdown(true_df, pred_df):
     
     fig.update_layout(updatemenus=[dropdown_menu], legend=dict(yanchor="bottom", y=0.30, xanchor="left", x=0))
     fig.show()
-
 
 def preprocess_trajectory(trajectory, target = None):
     """ computes the delta of a trajectory
@@ -96,6 +95,22 @@ def test(model: torch.nn.Module, data_module: FlightTrajectoryDataModule):
 
 
 def train(model: torch.nn.Module, model_hparams):
-     from flight_maneuvers.modules import FlightManeuverModule
-     model = FlightManeuverModule(model, model_hparams)
-     return model
+    LOG_DIR = 'logs'
+    MAX_STEPS = 5000
+
+    from lightning.pytorch.loggers import TensorBoardLogger
+    from lightning.pytorch.callbacks import EarlyStopping
+    from flight_maneuvers.modules import FlightManeuverModule
+
+    for num_train in [1, 5, 10, 20]:
+        L.seed_everything(0)
+        logger = TensorBoardLogger(LOG_DIR, name='resnet-'+str(num_train)+'-train')
+        early_stopping = EarlyStopping(monitor='val_loss', mode='max', patience=15)
+        data_module = FlightTrajectoryDataModule(num_train=num_train, num_valid=15, num_test=100)
+        trainer = L.Trainer(logger=logger, callbacks=[early_stopping], max_steps=MAX_STEPS)
+
+        model = FlightManeuverModule(model, model_hparams)
+        trainer.fit(model, data_module)
+        
+def fit(model, data):
+    pass

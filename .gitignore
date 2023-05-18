@@ -7,3 +7,6 @@ maneuver_dataset*
 # do not commit local experiments
 experiments
 
+logs/
+
+flight_maneuvers.egg-info/

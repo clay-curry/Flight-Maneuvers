@@ -23,6 +23,8 @@ def make_edge_idx(n):
             ),
         ])
 
+class SE3_PreActResNetBlock(EquivariantModule):
+    pass
 
 class SE3_ResNetBlock(EquivariantModule):
 
@@ -88,11 +90,11 @@ resnet_block_types = {
 }
 
 
-class SE3CNN(nn.Module):
+class SE3_ResNet(nn.Module):
 
     def __init__(self):
 
-        super(SE3CNN, self).__init__()
+        super(SE3_ResNet, self).__init__()
         self._init = 'he'
         self.gs = rot3dOnR3()
 
@@ -149,14 +151,14 @@ class SE3CNN(nn.Module):
 
         SO3 = self.gs.fibergroup
 
-        polinomials = [self.gs.trivial_repr, SO3.irrep(1)]
+        polynomials = [self.gs.trivial_repr, SO3.irrep(1)]
 
         for k in range(2, K+1):
-            polinomials.append(
-                polinomials[-1].tensor(SO3.irrep(1))
+            polynomials.append(
+                polynomials[-1].tensor(SO3.irrep(1))
             )
 
-        return directsum(polinomials, name=f'polynomial_{K}')
+        return directsum(polynomials, name=f'polynomial_{K}')
 
     def forward(self, input: torch.Tensor):
         edge_idx = make_edge_idx(input.shape[0])
@@ -180,8 +182,6 @@ if __name__ == '__main__':
     
 
     # build the SE(3) equivariant model
-    m = SE3CNN()
-   
 
     m.eval()
 

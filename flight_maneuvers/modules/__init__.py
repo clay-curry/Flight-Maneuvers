@@ -27,35 +27,22 @@ class FlightManeuverModule(L.LightningModule):
 
     def forward(self, trajectory):
         # Forward function that is run when visualizing the graph
-        x = preprocess_trajectory(trajectory)
-        return self.model(x)
+        return self.model(trajectory)
 
     def configure_optimizers(self):
         # We will support Adam or SGD as optimizers.
-        if self.hparams.optimizer_name == "Adam":
-            # AdamW is Adam with a correct implementation of weight decay (see here for details: https://arxiv.org/pdf/1711.05101.pdf)
-            optimizer = torch.optim.AdamW(
-                self.parameters(), **self.hparams.optimizer_hparams)
-        elif self.hparams.optimizer_name == "SGD":
-            optimizer = torch.optim.SGD(self.parameters(), **self.hparams.optimizer_hparams)
-        else:
-            assert False, f"Unknown optimizer: \"{self.hparams.optimizer_name}\""
-
-        # We will reduce the learning rate by 0.1 after 100 and 150 epochs
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=[100, 150], gamma=0.1)
-        return [optimizer], [scheduler]
+        return torch.optim.Adam(self.model.parameters())
 
     def training_step(self, batch, batch_idx):
         # "batch" is the output of the training data loader.
-        x, labels = batch
+        x, labels = preprocess_trajectory(batch[0])
         preds = self.model(x)
         loss = self.loss_module(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
         # Logs the accuracy per epoch to tensorboard (weighted average over batches)
-        self.log('train_acc', acc, on_step=False, on_epoch=True)
-        self.log('train_loss', loss)
+        self.log('train_acc', acc, batch_size=1, on_step=False, on_epoch=True)
+        self.log('train_loss', loss, prog_bar=True)
         
         opt = self.optimizers()
         opt.zero_grad()
@@ -63,14 +50,16 @@ class FlightManeuverModule(L.LightningModule):
         opt.step()
 
     def validation_step(self, batch, batch_idx):
-        x, labels = batch
-        preds = self.model(x).argmax(dim=-1)
-        acc = (labels == preds).float().mean()
+        x, labels = preprocess_trajectory(batch[0])
+        preds = self.model(x)
+        loss = self.loss_module(preds, labels)
+        acc = (preds.argmax(dim=-1) == labels).float().mean()
         # By default logs it per epoch (weighted average over batches)
-        self.log('val_acc', acc)
+        self.log('val_acc', acc, batch_size=1, prog_bar=True)
+        self.log('val_loss', acc, batch_size=1)
 
     def test_step(self, batch, batch_idx):
-        imgs, labels = batch
+        imgs, labels = preprocess_trajectory(batch[0])
         preds = self.model(imgs).argmax(dim=-1)
         acc = (labels == preds).float().mean()
         # By default logs it per epoch (weighted average over batches), and returns it afterwards
