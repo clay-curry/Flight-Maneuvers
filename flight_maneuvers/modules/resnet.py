@@ -1,8 +1,12 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from itertools import tee
 
-from flight_maneuvers.data_module import MANEUVERS
+def pairwise(iterable):
+    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
+    a, b = tee(iterable)
+    next(b, None)
+    return enumerate(zip(a, b))
 
 class ResNetBlock(nn.Module):
 
@@ -32,9 +36,8 @@ class ResNetBlock(nn.Module):
     def forward(self, x):
         z = self.net(x)
         out = z + self.proj(x)
-        out = self.act_fn(out)
-        return out
-
+        return self.act_fn(out)
+        
 
 class PreActResNetBlock(nn.Module):
     def __init__(self, c_in, k_size, act_fn, c_out=-1):
@@ -62,7 +65,6 @@ class PreActResNetBlock(nn.Module):
         z = self.net(x)
         return z + self.proj(x)
 
-
 resnet_block_types = {
     "ResNetBlock": ResNetBlock,
     "PreActResNetBlock": PreActResNetBlock
@@ -77,7 +79,14 @@ act_fn_by_name = {
         
 class ResNet(nn.Module):
 
-    def __init__(self, state_dim=12, num_blocks=[3,3,3], kernel_size=[3,3,3], c_hidden=[16,32,64], act_fn_name="relu", block_name="ResNetBlock", num_maneuvers=10, **kwargs):
+    def __init__(self, 
+                c_hidden=[16,32,64], 
+                kernel_size=[3,3,3],
+                act_fn_name="relu", 
+                block_name="ResNetBlock", 
+                num_maneuvers=10, 
+                **kwargs
+        ):
         """
         Inputs:
             num_classes - Number of classification outputs (10 for CIFAR10)
@@ -88,59 +97,42 @@ class ResNet(nn.Module):
         """
         super().__init__()
         assert block_name in resnet_block_types
-        self.state_dim=state_dim
-        self.c_hidden=c_hidden
-        self.kernel_size=kernel_size
-        self.num_blocks=num_blocks
-        self.act_fn_name=act_fn_name
-        self.act_fn=act_fn_by_name[act_fn_name]
-        self.block_class=resnet_block_types[block_name]
-        self.num_maneuvers=num_maneuvers
-        self._create_network()
-        self._init_params()
-
-    def _create_network(self):
-        c_hidden = self.c_hidden
-        kernel_size = self.kernel_size
+        self.act_fn_name = act_fn_name
+        
+        state_dim = 1
+        state_dim += 3 if 'dpos' in kwargs['features'] else 0
+        state_dim += 3 if 'vel' in kwargs['features'] else 0
+        state_dim += 3 if 'dvel' in kwargs['features'] else 0
+        state_dim += 2 if 'pos' in kwargs['features'] else 0
+        
         # A first convolution on the original image to scale up the channel size
-        if self.block_class == PreActResNetBlock: # => Don't apply non-linearity on output
-            self.input_net = nn.Sequential(
-                nn.Conv1d(self.state_dim, c_hidden[0], kernel_size=kernel_size[0], padding="same", bias=False)
-            )
-        else:
-            self.input_net = nn.Sequential(
-                nn.Conv1d(self.state_dim, c_hidden[0], kernel_size=kernel_size[0], padding="same", bias=False),
+        self.input_net = nn.Sequential(
+                nn.Conv1d(state_dim, c_hidden[0], kernel_size=kernel_size, padding="same", bias=False)
+            ) if resnet_block_types[block_name] == PreActResNetBlock else nn.Sequential(
+                nn.Conv1d(state_dim, c_hidden[0], kernel_size=kernel_size, padding="same", bias=False),
                 nn.BatchNorm1d(c_hidden[0]),
-                self.act_fn()
+                act_fn_by_name[act_fn_name]()
             )
-        c_hidden = [c_hidden[0]] + c_hidden
         
         # Creating the ResNet blocks
-        blocks = []
-        for block_idx, block_count in enumerate(self.num_blocks):
-            blocks.append(
-                    self.block_class(
-                        c_in=c_hidden[block_idx],
-                        act_fn=self.act_fn,
-                        k_size=kernel_size[block_idx],
-                        c_out=c_hidden[block_idx+1])
-                )
-            for bc in range(block_count - 1):
-                blocks.append(
-                    self.block_class(
-                        c_in=c_hidden[block_idx+1],
-                        act_fn=self.act_fn,
-                        k_size=kernel_size[block_idx],
-                        c_out=c_hidden[block_idx+1])
-                )
-
-        self.blocks = blocks
+        self.blocks = nn.Sequential(*[
+            resnet_block_types[block_name](
+                c_in=c_in,
+                act_fn=act_fn_by_name[act_fn_name],
+                k_size=kernel_size,
+                c_out=c_out
+            ) for block_idx, (c_in, c_out) in pairwise(c_hidden)
+        ])
 
         # Mapping to classification output
         self.output_net = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(c_hidden[-1], self.num_maneuvers)
+            nn.Linear(c_hidden[-1], c_hidden[-1]),
+            act_fn_by_name[act_fn_name](),
+            nn.Linear(c_hidden[-1], num_maneuvers)
         )
+        
+        self._init_params()
+
 
     def _init_params(self):
         # Based on our discussion in Tutorial 4, we should initialize the convolutions according to the activation function
@@ -153,12 +145,8 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-        x = torch.transpose(x, -1, -2).unsqueeze(0).contiguous()
-        
+        x = torch.transpose(x, -1, -2).unsqueeze(0).contiguous()        
         x = self.input_net(x)
-        for block in self.blocks:
-            x = block(x)
-        x = torch.transpose(x, -1, -2).squeeze(0)
-
+        x = self.blocks(x).transpose(-1, -2).squeeze(0)
         x = self.output_net(x)
         return x

@@ -2,14 +2,10 @@ import torch
 import numpy as np
 import pandas as pd
 
-import lightning as L
-
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-
-from flight_maneuvers import CHECKPOINT_PATH
 from flight_maneuvers.data_module import MANEUVERS
 from flight_maneuvers.modules.resnet import ResNet, PreActResNetBlock
 from flight_maneuvers.data_module import FlightTrajectoryDataModule
@@ -41,7 +37,7 @@ def plot_scenario_topdown(true_df, pred_df):
     fig.update_layout(updatemenus=[dropdown_menu], legend=dict(yanchor="bottom", y=0.30, xanchor="left", x=0))
     fig.show()
 
-def preprocess_trajectory(trajectory, target = None):
+def preprocess_trajectory(raw_signal, feature_hparams):
     """ computes the delta of a trajectory
 
     Args:
@@ -50,18 +46,31 @@ def preprocess_trajectory(trajectory, target = None):
     Returns:
         a pandas dataframe with columns x, y, z, vx, xy, vz, dx, dy, dz, dvx, dvy, dvz, maneuver
     """
-    maneuvers = tokenize_maneuvers(trajectory['maneuver'])
-    trajectory = trajectory.drop('maneuver', axis=1).drop('t', axis=1)
+    maneuvers = tokenize_maneuvers(raw_signal['maneuver'])
+    trajectory = raw_signal[['z']]
+    
+    if 'pos' in feature_hparams:
+        trajectory['x'] = raw_signal['x']
+        trajectory['y'] = raw_signal['y']
+    
+    if 'vel' in feature_hparams:
+        trajectory['vx'] = raw_signal['vx']
+        trajectory['vy'] = raw_signal['vy']
+        trajectory['vz'] = raw_signal['vz']
+
+    if 'dpos' in feature_hparams:
+        trajectory['dx'] = raw_signal['x'].diff()
+        trajectory['dy'] = raw_signal['y'].diff()
+        trajectory['dz'] = raw_signal['z'].diff()
+        trajectory['dx'].iloc[0] = trajectory['dy'].iloc[0] = trajectory['dz'].iloc[0] = 0
+
+    if 'dvel' in feature_hparams:
+        trajectory['dvx'] = raw_signal['vx'].diff()
+        trajectory['dvy'] = raw_signal['vy'].diff()
+        trajectory['dvz'] = raw_signal['vz'].diff()
+        trajectory['dx'].iloc[0] = trajectory['dy'].iloc[0] = trajectory['dz'].iloc[0] = 0
 
     # initialize delta_trajectory with the first row of trajectory
-    trajectory['dx'] = trajectory['x'].diff()
-    trajectory['dy'] = trajectory['y'].diff()
-    trajectory['dz'] = trajectory['z'].diff()
-    trajectory['dvx'] = trajectory['vx'].diff()
-    trajectory['dvy'] = trajectory['vy'].diff()
-    trajectory['dvz'] = trajectory['vz'].diff()
-    trajectory['dx'].iloc[0] = trajectory['dy'].iloc[0] = trajectory['dz'].iloc[0] = 0 
-    trajectory['dvx'].iloc[0] = trajectory['dvy'].iloc[0] = trajectory['dvz'].iloc[0] = 0 
     return torch.tensor(trajectory.values, dtype=torch.float32), torch.tensor(maneuvers)
 
 def postprocess_joint(joint_dist):
@@ -77,40 +86,3 @@ def postprocess_joint(joint_dist):
     joint_df['maneuver'] = joint_df.idxmax(axis="columns")
     return joint_df
 
-def test(model: torch.nn.Module, data_module: FlightTrajectoryDataModule):
-    total = 0
-    correct = 0
-
-    with torch.no_grad():
-        model.eval()
-        for i, (x, t) in enumerate(data_module.test_loader()):
-            
-            y = model(x)
-
-            _, prediction = torch.max(y.data, 1)
-            total += t.shape[0]
-            correct += (prediction == t).sum().item()
-    
-    return correct/total*100
-
-
-def train(model: torch.nn.Module, model_hparams):
-    LOG_DIR = 'logs'
-    MAX_STEPS = 5000
-
-    from lightning.pytorch.loggers import TensorBoardLogger
-    from lightning.pytorch.callbacks import EarlyStopping
-    from flight_maneuvers.modules import FlightManeuverModule
-
-    for num_train in [1, 5, 10, 20]:
-        L.seed_everything(0)
-        logger = TensorBoardLogger(LOG_DIR, name='resnet-'+str(num_train)+'-train')
-        early_stopping = EarlyStopping(monitor='val_loss', mode='max', patience=15)
-        data_module = FlightTrajectoryDataModule(num_train=num_train, num_valid=15, num_test=100)
-        trainer = L.Trainer(logger=logger, callbacks=[early_stopping], max_steps=MAX_STEPS)
-
-        model = FlightManeuverModule(model, model_hparams)
-        trainer.fit(model, data_module)
-        
-def fit(model, data):
-    pass

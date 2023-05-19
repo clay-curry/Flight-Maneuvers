@@ -33,10 +33,7 @@ class SE3_ResNetBlock(EquivariantModule):
         super(SE3_ResNetBlock, self).__init__()
         
         self.in_type = in_type
-        if out_type is None:
-            self.out_type = self.in_type
-        else:
-            self.out_type = out_type
+        self.out_type = self.in_type if out_type is None else out_type
 
         gspace = self.out_type.gspace
         
@@ -51,7 +48,8 @@ class SE3_ResNetBlock(EquivariantModule):
                     width=1,
                     n_rings=2,
                     bias=False, 
-                    initialize=True)
+                    initialize=True
+            )
         #self.batch_norm = NormBatchNorm(hidden_type, affine=True)
         self.nonlinearity1 = GatedNonLinearity1(FieldType(gspace, reprs), gates=gates)
 
@@ -177,13 +175,18 @@ if __name__ == '__main__':
     r = SO3.irrep(1)(SO3.sample()).astype('float32')
 
     x = torch.randn(5, 3)
-    r = torch.mm(x, torch.from_numpy(r)).shape
+    rx = torch.mm(x, torch.from_numpy(r))
+
+    
+
+    m = SE3_ResNet()
+
     
     
 
     # build the SE(3) equivariant model
 
-    m.eval()
+    
 
     # feed all inputs to the model
     y = m(x)
