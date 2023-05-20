@@ -59,17 +59,16 @@ def preprocess_trajectory(raw_signal, feature_hparams):
         trajectory['vz'] = raw_signal['vz']
 
     if 'dpos' in feature_hparams:
-        trajectory['dx'] = raw_signal['x'].diff()
-        trajectory['dy'] = raw_signal['y'].diff()
-        trajectory['dz'] = raw_signal['z'].diff()
+        trajectory = trajectory.assign(dx=raw_signal['x'].diff())
+        trajectory = trajectory.assign(dy=raw_signal['y'].diff())
+        trajectory = trajectory.assign(dz=raw_signal['z'].diff())
         trajectory['dx'].iloc[0] = trajectory['dy'].iloc[0] = trajectory['dz'].iloc[0] = 0
 
     if 'dvel' in feature_hparams:
-        trajectory['dvx'] = raw_signal['vx'].diff()
-        trajectory['dvy'] = raw_signal['vy'].diff()
-        trajectory['dvz'] = raw_signal['vz'].diff()
-        trajectory['dx'].iloc[0] = trajectory['dy'].iloc[0] = trajectory['dz'].iloc[0] = 0
-
+        trajectory = trajectory.assign(dvx=raw_signal['vx'].diff())
+        trajectory = trajectory.assign(dvy=raw_signal['vy'].diff())
+        trajectory = trajectory.assign(dvz=raw_signal['vz'].diff())
+        trajectory['dvx'].iloc[0] = trajectory['dvy'] = trajectory['dvz'] = 0
     # initialize delta_trajectory with the first row of trajectory
     return torch.tensor(trajectory.values, dtype=torch.float32), torch.tensor(maneuvers)
 

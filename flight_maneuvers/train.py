@@ -1,8 +1,12 @@
 import torch
 import lightning as L
-from flight_maneuvers.utils import *
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import EarlyStopping
 
-class LigntingAdapter(L.LightningModule):
+from flight_maneuvers.utils import *
+from flight_maneuvers.data_module import FlightTrajectoryDataModule
+
+class TrainingModule(L.LightningModule):
     def __init__(self, 
                  model_name, 
                  optimizer=torch.optim.Adam, 
@@ -25,7 +29,6 @@ class LigntingAdapter(L.LightningModule):
         self.loss_module = torch.nn.CrossEntropyLoss()
         # This module is responsible for calling .backward(), .step(), .zero_grad().
         self.automatic_optimization = False
-        self.gradient_ticker = 0
 
     def forward(self, trajectory):
         # Forward function that is run when visualizing the graph
@@ -38,7 +41,7 @@ class LigntingAdapter(L.LightningModule):
             optimizer = torch.optim.AdamW(
                 self.parameters(), lr=self.hparams.optimizer['lr'])
         elif self.hparams.optimizer['opt'] == "SGD":
-            optimizer = torch.optim.SGD(self.parameters(), **self.hparams.optimizer_hparams)
+            optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.optimizer['lr'])
         else:
             assert False, f"Unknown optimizer: \"{self.hparams.optimizer_name}\""
 
@@ -62,43 +65,66 @@ class LigntingAdapter(L.LightningModule):
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
         # Logs the accuracy per epoch to tensorboard (weighted average over batches)
-        self.log('train_acc', acc, batch_size=1, on_step=False, on_epoch=True)
+        self.log('train_acc', acc, batch_size=1)
         self.log('train_loss', loss, prog_bar=True)        
 
+        opt = self.optimizers()
+        opt.zero_grad()
         self.manual_backward(loss)
-        self.gradient_ticker += 1 
-        if (self.gradient_ticker + 1) % 5 == 0:
-            opt = self.optimizers()
-            opt.step()
-            opt.zero_grad()
-            self.gradient_ticker = 0
+        opt.step()
+    
         
     def validation_step(self, batch, batch_idx):
         x, labels = preprocess_trajectory(batch[0], self.hparams['features'])
         preds = self.model(x)
-        loss = self.loss_module(preds, labels)
+        loss = self.loss_module(preds, labels) / len(labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
         # By default logs it per epoch (weighted average over batches)
         self.log('val_acc', acc, batch_size=1, prog_bar=True)
         self.log('val_loss', loss, batch_size=1, prog_bar=True)
+        
+        # If the selected scheduler is a ReduceLROnPlateau scheduler.
+        sch = self.lr_schedulers()
+        if isinstance(sch, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            sch.step(loss)
+
 
     def test_step(self, batch, batch_idx):
-        imgs, labels = preprocess_trajectory(batch, self.hparams['features'])
-        preds = self.model(imgs).argmax(dim=-1)
-        acc = (labels == preds).float().mean()
-        # By default logs it per epoch (weighted average over batches), and returns it afterwards
-        self.save_hyperparameters({'test_acc': acc})
-    
-    def on_train_epoch_end(self):
-        sch = self.lr_schedulers()
+        x, labels = preprocess_trajectory(batch, self.hparams['features'])
+        preds = self.model(x)
+        loss = self.loss_module(preds, labels) / len(labels)
+        acc = (preds.argmax(dim=-1) == labels).float().mean()
 
-        # If the selected scheduler is a ReduceLROnPlateau scheduler.
-        if isinstance(sch, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            sch.step(self.trainer.callback_metrics["val_loss"])
-    
+        self.log('acc', acc, batch_size=1, prog_bar=True)
+            
     def predict(self, trajectory_df):
         with torch.set_grad_enabled(False):            
             x, _ = preprocess_trajectory(trajectory_df, self.hparams['features'])
             joint_dist = self.forward(x).softmax(-1)
             joint_dist = postprocess_joint(joint_dist)
             return joint_dist
+
+
+def train(model: torch.nn.Module, seed, num_train, num_valid, max_steps, hparams):
+    
+    LOG_DIR = 'logs'
+    MAX_STEPS = 250 # * 5
+    VALIDATE_EVERY_N_STEPS = 50
+
+    L.seed_everything(seed)
+    data_module = FlightTrajectoryDataModule(num_train=num_train, num_valid=num_valid, num_test=100)
+    early_stopping = EarlyStopping(monitor='val_loss', mode='max', patience=15)
+    litmodel = TrainingModule(model, **hparams)
+    tb_logger = TensorBoardLogger(LOG_DIR, name='resnet-'+str(num_train)+'-train')
+    trainer = L.Trainer(
+        logger=tb_logger,
+        enable_checkpointing=False,
+        callbacks=[early_stopping], 
+        max_steps=MAX_STEPS,
+        check_val_every_n_epoch=None,
+        val_check_interval=VALIDATE_EVERY_N_STEPS,
+        fast_dev_run=True
+    )
+    trainer.fit(litmodel, data_module)
+    return trainer.test(litmodel, data_module)[0]['acc']
+        

@@ -9,7 +9,6 @@ class TestResnet(TestCase):
     
     def test_se3resnet(self):
         model_params = {
-            "state_dim": 12,
             "num_maneuvers": len(MANEUVERS),
             "num_blocks": [3, 3, 3],
             "c_hidden": [16, 32, 64],
@@ -22,7 +21,6 @@ class TestResnet(TestCase):
 
     def test_se3resnet_invariance(self):
         x = torch.randn(5, 3)
-        y = m(x)
 
         # the outputs should be (about) the same for all transformations the model is invariant to
         print()

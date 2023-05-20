@@ -1,5 +1,9 @@
 from flight_maneuvers.modules.resnet import ResNet
 from flight_maneuvers.utils import *
-from flight_maneuvers.optimize import search_space
+from flight_maneuvers.tune import *
 
-print(search_space(ResNet))
+from flight_maneuvers.tune import *
+from flight_maneuvers.modules.resnet import ResNet
+
+s = Search(ResNet)
+s.evolve()
