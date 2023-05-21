@@ -29,7 +29,7 @@ class IdHandler:
     Thus, there is no resultant explosion of innovation numbers." -
     :cite:`stanley:ec02`
 
-    In `NEvoPy`, it's possible to configure the rate at which innovation numbers
+    In `flight_maneuvers.evolution`, it's possible to configure the rate at which innovation numbers
     are reset (see :attr:`.NeatConfig.reset_innovations_period`).
 
     Warning:

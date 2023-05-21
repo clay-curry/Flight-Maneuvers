@@ -76,7 +76,7 @@ act_fn_by_name = {
     "leakyrelu": nn.LeakyReLU,
     "gelu": nn.GELU
 }
-        
+
 class ResNet(nn.Module):
 
     def __init__(self, 

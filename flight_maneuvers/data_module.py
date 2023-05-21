@@ -10,6 +10,10 @@ from lightning import LightningDataModule
 
 from flight_maneuvers import DATASET_PATH
 
+
+# path pointing to a dataset of simulated flight trajectories with labeled maneuvers
+DATASET_PATH = 'examples/maneuver_dataset'
+
 MANEUVERS = ['takeoff', 'turn', 'line', 'orbit', 'landing']
 
 

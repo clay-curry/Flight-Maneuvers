@@ -8,8 +8,8 @@ from typing import Any, Callable, Generic, List, Optional, Type, TypeVar
 
 import numpy as np
 
-import nevopy as ne
-from nevopy.processing.base_scheduler import ProcessingScheduler
+import flight_maneuvers.evolution as ne
+from flight_maneuvers.evolution.processing.base_scheduler import ProcessingScheduler
 
 TGenome = TypeVar("TGenome", bound="ne.base_genome.BaseGenome")
 
@@ -19,7 +19,7 @@ class BasePopulation(ABC, Generic[TGenome]):
 
     This base abstract class defines a population of genomes (each of which
     encodes a neural network) to be evolved through neuroevolution. It's in this
-    class' subclasses where the core of `NEvoPy's` neuroevolutionary algorithms
+    class' subclasses where the core of `flight_maneuvers.evolution's` neuroevolutionary algorithms
     are implemented.
 
     Args:
@@ -82,7 +82,7 @@ class BasePopulation(ABC, Generic[TGenome]):
                 be used to customize the algorithm's behaviour.
 
         Returns:
-            An instance of :class:`nevopy.callbacks.History` containing relevant
+            An instance of :class:`flight_maneuvers.evolution.callbacks.History` containing relevant
             information about the evolutionary session.
         """
 

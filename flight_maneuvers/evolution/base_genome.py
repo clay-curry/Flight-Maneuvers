@@ -7,21 +7,21 @@ either directly or indirectly.
 
 This module declares the base abstract class that must be inherited by all the
 different classes of genomes used by the neuroevolutionary algorithms in
-`NEvoPy`.
+`flight_maneuvers.evolution`.
 """
 
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple, Union
 
-from nevopy.utils.utils import pickle_load
-from nevopy.utils.utils import pickle_save
+from flight_maneuvers.evolution.utils import pickle_load
+from flight_maneuvers.evolution.utils import pickle_save
 
 
 class BaseGenome(ABC):
-    """ Defines the general behaviour of a genome in `NEvoPy`.
+    """ Defines the general behaviour of a genome in `flight_maneuvers.evolution`.
 
     This class must be inherited by all the different classes of genomes present
-    in `NEvoPy`
+    in `flight_maneuvers.evolution`
 
     In the context of neuroevolution, a genome is the entity subject to the
     evolutionary process. It encodes a neural network (the genome's phenotype),
@@ -35,8 +35,8 @@ class BaseGenome(ABC):
 
     One of the goals of this base abstract class is to abstract those details
     for the user, defining a general interface for the different types of
-    genomes used by the different neuroevolutionary algorithms in `NEvoPy`.
-    Generally, for `NEvoPy`, there is no distinction between a genome and the
+    genomes used by the different neuroevolutionary algorithms in `flight_maneuvers.evolution`.
+    Generally, for `flight_maneuvers.evolution`, there is no distinction between a genome and the
     network it encodes.
 
     A genome must be capable of processing inputs based on its nodes and

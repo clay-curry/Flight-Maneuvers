@@ -1,8 +1,7 @@
 
-""" Imports core names of :mod:`nevopy.processing`.
+""" Imports core names of :mod:`flight_maneuvers.evolution.processing`.
 """
 
-from nevopy.processing.base_scheduler import ProcessingScheduler
-from nevopy.processing.pool_processing import PoolProcessingScheduler
-from nevopy.processing.ray_processing import RayProcessingScheduler
-from nevopy.processing.serial_processing import SerialProcessingScheduler
+from flight_maneuvers.evolution.processing.base_scheduler import ProcessingScheduler
+from flight_maneuvers.evolution.processing.pool_processing import PoolProcessingScheduler
+from flight_maneuvers.evolution.processing.serial_processing import SerialProcessingScheduler

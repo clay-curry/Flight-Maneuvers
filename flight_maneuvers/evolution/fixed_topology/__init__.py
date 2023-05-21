@@ -1,7 +1,17 @@
 
-""" Imports core names of :mod:`nevopy.fixed_topology`.
+""" Imports core names of :mod:`flight_maneuvers.evolution.fixed_topology`.
 """
 
-from nevopy.fixed_topology import layers
+from flight_maneuvers.evolution.fixed_topology import layers
 
-from nevopy.fixed_topology.genomes import FixedTopologyGenome
+try:
+    import tensorflow
+    from flight_maneuvers.evolution.fixed_topology.tf_genomes import FixedTopologyGenome
+except ImportError:
+    pass
+
+try:
+    import torch
+    from flight_maneuvers.evolution.fixed_topology.pytorch_genomes import FixedTopologyGenome
+except ImportError:
+    pass

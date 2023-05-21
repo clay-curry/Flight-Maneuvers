@@ -8,9 +8,9 @@ from typing import Any, List, Optional, Tuple
 
 from numpy import ndarray
 
-from nevopy.genetic_algorithm.config import GeneticAlgorithmConfig
-from nevopy.utils import pickle_load
-from nevopy.utils import pickle_save
+from flight_maneuvers.evolution.config import GeneticAlgorithmConfig
+from flight_maneuvers.evolution.utils import pickle_load
+from flight_maneuvers.evolution.utils import pickle_save
 
 
 class BaseLayer(ABC):

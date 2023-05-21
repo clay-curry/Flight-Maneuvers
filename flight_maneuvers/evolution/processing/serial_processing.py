@@ -4,8 +4,8 @@
 
 from typing import Callable, List, Sequence
 
-from nevopy.processing.base_scheduler import ProcessingScheduler
-from nevopy.processing.base_scheduler import TProcItem, TProcResult
+from flight_maneuvers.evolution.processing.base_scheduler import ProcessingScheduler
+from flight_maneuvers.evolution.processing.base_scheduler import TProcItem, TProcResult
 
 
 class SerialProcessingScheduler(ProcessingScheduler):

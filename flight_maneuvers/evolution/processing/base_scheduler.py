@@ -2,7 +2,7 @@
 """ Defines a common interface for processing schedulers.
 
 This module contains a base model for a processing scheduler, the entity
-responsible for managing the computation of a population's fitness in `NEvoPy's`
+responsible for managing the computation of a population's fitness in `flight_maneuvers.evolution's`
 algorithms. Schedulers allow the implementation of the computation methods (like
 the use of serial or parallel processing) to be separated from the
 implementation of the neuroevolutionary algorithms.
@@ -25,7 +25,7 @@ TProcResult = TypeVar("TProcResult")
 class ProcessingScheduler(ABC):
     """ Defines a common interface for processing schedulers.
 
-    In `NEvoPy`, a processing scheduler is responsible for managing the
+    In `flight_maneuvers.evolution`, a processing scheduler is responsible for managing the
     computation of the fitness of a population of individuals being evolved.
     This abstract class defines a common interface for processing schedulers
     used by different algorithms. Schedulers allow the implementation of the

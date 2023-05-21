@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-import nevopy as ne
+import flight_maneuvers.evolution as ne
 
 if TYPE_CHECKING:
     import pygame
@@ -153,7 +153,7 @@ def visualize_genome(genome: "ne.neat.genomes.NeatGenome",
     * The `graphviz` layout; it's really good, but to use it you must
       have `Graphviz-Dev` and `pygraphviz` installed on your machine;
     * The `columns` layout (used by default), implemented exclusively for
-      `NEvoPy`; it positions the nodes in columns (see
+      `flight_maneuvers.evolution`; it positions the nodes in columns (see
       :meth:`.NeatGenome.columns_graph_layout`, specially the parameter
       ``ideal_h_nodes_per_col``).
 

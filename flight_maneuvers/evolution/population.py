@@ -9,15 +9,15 @@ from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from nevopy import processing
-from nevopy.base_genome import BaseGenome
-from nevopy.base_population import BasePopulation
-from nevopy.callbacks import Callback
-from nevopy.callbacks import CompleteStdOutLogger
-from nevopy.callbacks import History
-from nevopy.callbacks import SimpleStdOutLogger
-from nevopy.genetic_algorithm.config import GeneticAlgorithmConfig
-from nevopy.utils import utils
+from flight_maneuvers.evolution import utils
+from flight_maneuvers.evolution import processing
+from flight_maneuvers.evolution.base_genome import BaseGenome
+from flight_maneuvers.evolution.base_population import BasePopulation
+from flight_maneuvers.evolution.callbacks import Callback
+from flight_maneuvers.evolution.callbacks import CompleteStdOutLogger
+from flight_maneuvers.evolution.callbacks import History
+from flight_maneuvers.evolution.callbacks import SimpleStdOutLogger
+from flight_maneuvers.evolution.config import GeneticAlgorithmConfig
 
 _logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class GeneticPopulation(BasePopulation):
     """
 
     #: Default processing scheduler used by instances of this class.
-    DEFAULT_SCHEDULER = processing.RayProcessingScheduler
+    DEFAULT_SCHEDULER = processing.PoolProcessingScheduler
 
     def __init__(self,
                  size: int,

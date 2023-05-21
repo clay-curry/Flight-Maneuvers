@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from nevopy.neat.genomes import NeatGenome
+from flight_maneuvers.evolution.neat.genomes import NeatGenome
 
 
 class NeatSpecies:

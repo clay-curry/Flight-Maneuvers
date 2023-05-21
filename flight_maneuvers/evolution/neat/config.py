@@ -1,12 +1,13 @@
 
+
 """ This module implements the :class:`NeatConfig` class, used to handle the
 settings of the NEAT algorithm.
 """
 
-import nevopy as ne
+import flight_maneuvers.evolution as ne
 
 
-class NeatConfig(ne.genetic_algorithm.config.GeneticAlgorithmConfig):
+class NeatConfig(ne.config.GeneticAlgorithmConfig):
     """ Stores the settings of the NEAT algorithm.
 
     Individual configurations can be ignored (default values will be used), set

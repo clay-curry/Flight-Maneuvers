@@ -11,11 +11,11 @@ from PIL import Image
 from tensorflow.keras.models import Sequential as KerasSequential
 from tensorflow.keras.utils import plot_model as keras_plot_model
 
-from nevopy.base_genome import BaseGenome, IncompatibleGenomesError
-from nevopy.fixed_topology.layers.base_layer import BaseLayer
-from nevopy.fixed_topology.layers.tf_layers import IncompatibleLayersError
-from nevopy.fixed_topology.layers.tf_layers import TensorFlowLayer
-from nevopy.genetic_algorithm.config import GeneticAlgorithmConfig
+from flight_maneuvers.evolution.base_genome import BaseGenome, IncompatibleGenomesError
+from flight_maneuvers.evolution.fixed_topology.layers.base_layer import BaseLayer
+from flight_maneuvers.evolution.fixed_topology.layers.tf_layers import IncompatibleLayersError
+from flight_maneuvers.evolution.fixed_topology.layers.tf_layers import TensorFlowLayer
+from flight_maneuvers.evolution.config import GeneticAlgorithmConfig
 
 _logger = logging.getLogger(__name__)
 

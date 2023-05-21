@@ -10,18 +10,22 @@ import logging
 import os
 from typing import Any, cast, Dict, List, Optional, Sequence, Tuple
 
+import warnings
 import numpy as np
-np.warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) \
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) \
     # pylint: disable=wrong-import-position
-from tensorflow import reshape
+from torch import reshape
 
-import nevopy as ne
+
+import flight_maneuvers.evolution as evo
+from flight_maneuvers.evolution import neat   
+from flight_maneuvers.evolution.base_genome import BaseGenome
 
 _logger = logging.getLogger(__name__)
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 
-class NeatGenome(ne.base_genome.BaseGenome):
+class NeatGenome(BaseGenome):
     """ Linear representation of a neural network's connectivity.
 
     In the context of NEAT, a genome is a collection of genes that encode a
@@ -70,7 +74,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
     def __init__(self,
                  num_inputs: int,
                  num_outputs: int,
-                 config: "ne.neat.config.NeatConfig",
+                 config: "neat.config.NeatConfig",
                  initial_connections: bool = True) -> None:
         super().__init__()
         self._config = config
@@ -80,14 +84,14 @@ class NeatGenome(ne.base_genome.BaseGenome):
         self.fitness = 0.0
         self.adj_fitness = 0.0
 
-        self.input_nodes = []   # type: List["ne.neat.NodeGene"]
-        self.hidden_nodes = []  # type: List["ne.neat.NodeGene"]
-        self.output_nodes = []  # type: List["ne.neat.NodeGene"]
-        self.bias_node = None   # type: Optional["ne.neat.NodeGene"]
+        self.input_nodes = []   # type: List["neat.NodeGene"]
+        self.hidden_nodes = []  # type: List["neat.NodeGene"]
+        self.output_nodes = []  # type: List["neat.NodeGene"]
+        self.bias_node = None   # type: Optional["neat.NodeGene"]
 
-        self.connections = []  # type: List["ne.neat.ConnectionGene"]
+        self.connections = []  # type: List["neat.ConnectionGene"]
         self._existing_connections_dict = {} \
-            # type: Dict[int, Dict[int, "ne.neat.ConnectionGene"]]
+            # type: Dict[int, Dict[int, "neat.ConnectionGene"]]
         self._output_activation = self.config.out_nodes_activation
         self._hidden_activation = self.config.hidden_nodes_activation
 
@@ -95,20 +99,20 @@ class NeatGenome(ne.base_genome.BaseGenome):
         node_counter = 0
         for _ in range(num_inputs):
             self.input_nodes.append(
-                ne.neat.NodeGene(
+                neat.NodeGene(
                     node_id=node_counter,
-                    node_type=ne.neat.NodeGene.Type.INPUT,
-                    activation_func=ne.activations.linear,
+                    node_type=neat.NodeGene.Type.INPUT,
+                    activation_func=evo.activations.linear,
                     initial_activation=self.config.initial_node_activation)
             )
             node_counter += 1
 
         # init bias node
         if self.config.bias_value is not None:
-            self.bias_node = ne.neat.NodeGene(
+            self.bias_node = neat.NodeGene(
                 node_id=node_counter,
-                node_type=ne.neat.NodeGene.Type.BIAS,
-                activation_func=ne.activations.linear,
+                node_type=neat.NodeGene.Type.BIAS,
+                activation_func=evo.activations.linear,
                 initial_activation=self.config.bias_value,
             )
             node_counter += 1
@@ -116,9 +120,9 @@ class NeatGenome(ne.base_genome.BaseGenome):
         # init output nodes
         connection_counter = 0
         for _ in range(num_outputs):
-            out_node = ne.neat.NodeGene(
+            out_node = neat.NodeGene(
                 node_id=node_counter,
-                node_type=ne.neat.NodeGene.Type.OUTPUT,
+                node_type=neat.NodeGene.Type.OUTPUT,
                 activation_func=self._output_activation,
                 initial_activation=self.config.initial_node_activation,
             )
@@ -193,7 +197,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
         Returns:
             The distance between the genomes.
         """
-        genes = ne.neat.align_connections(self.connections, other.connections)
+        genes = neat.align_connections(self.connections, other.connections)
         excess = disjoint = num_matches = 0
         weight_diff = 0.0
 
@@ -241,8 +245,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
 
     def add_connection(self,
                        cid: int,
-                       src_node: "ne.neat.genes.NodeGene",
-                       dest_node: "ne.neat.genes.NodeGene",
+                       src_node: "neat.genes.NodeGene",
+                       dest_node: "neat.genes.NodeGene",
                        enabled: bool = True,
                        weight: Optional[float] = None) -> None:
         """ Adds a new connection gene to the genome.
@@ -269,8 +273,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
             raise ConnectionExistsError(
                 f"Attempt to create an already existing connection "
                 f"({src_node.id}->{dest_node.id}).")
-        if (dest_node.type == ne.neat.NodeGene.Type.BIAS
-                or dest_node.type == ne.neat.NodeGene.Type.INPUT):
+        if (dest_node.type == neat.NodeGene.Type.BIAS
+                or dest_node.type == neat.NodeGene.Type.INPUT):
             raise ConnectionToBiasNodeError(
                 f"Attempt to create a connection pointing to a bias or input "
                 f"node ({src_node.id}->{dest_node.id}). Nodes of this type "
@@ -278,7 +282,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
 
         weight = (np.random.uniform(*self.config.new_weight_interval)
                   if weight is None else weight)
-        connection = ne.neat.ConnectionGene(cid=cid,
+        connection = neat.ConnectionGene(cid=cid,
                                             from_node=src_node,
                                             to_node=dest_node,
                                             weight=weight)
@@ -293,8 +297,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
         self._existing_connections_dict[src_node.id][dest_node.id] = connection
 
     def add_random_connection(self,
-                              id_handler: "ne.neat.id_handler.IdHandler",
-    ) -> Optional[Tuple["ne.neat.genes.NodeGene", "ne.neat.genes.NodeGene"]]:
+                              id_handler: "neat.id_handler.IdHandler",
+    ) -> Optional[Tuple["neat.genes.NodeGene", "neat.genes.NodeGene"]]:
         """  Adds a new connection between two random nodes in the genome.
 
         This is an implementation of the `add connection mutation`, described in
@@ -314,8 +318,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
         np.random.shuffle(all_src_nodes)
 
         all_dest_nodes = [n for n in all_src_nodes
-                          if (n.type != ne.neat.NodeGene.Type.BIAS
-                              and n.type != ne.neat.NodeGene.Type.INPUT)]
+                          if (n.type != neat.NodeGene.Type.BIAS
+                              and n.type != neat.NodeGene.Type.INPUT)]
         np.random.shuffle(all_dest_nodes)
 
         for src_node in all_src_nodes:
@@ -336,8 +340,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
             connection.enabled = True
 
     def add_random_hidden_node(self,
-                               id_handler: "ne.neat.id_handler.IdHandler",
-    ) -> Optional["ne.neat.genes.NodeGene"]:
+                               id_handler: "neat.id_handler.IdHandler",
+    ) -> Optional["neat.genes.NodeGene"]:
         """ Adds a new hidden node to the genome in a random position.
 
         This method implements the `add node mutation` procedure described in
@@ -378,9 +382,9 @@ class NeatGenome(ne.base_genome.BaseGenome):
                 continue
 
             original_connection.enabled = False
-            new_node = ne.neat.NodeGene(
+            new_node = neat.NodeGene(
                 node_id=hid,
-                node_type=ne.neat.NodeGene.Type.HIDDEN,
+                node_type=neat.NodeGene.Type.HIDDEN,
                 activation_func=self._hidden_activation,
                 initial_activation=self.config.initial_node_activation
             )
@@ -407,7 +411,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
         or to remain unchanged.
         """
         for connection in self.connections:
-            if ne.utils.chance(self.config.weight_reset_chance):
+            if evo.utils.chance(self.config.weight_reset_chance):
                 # perturbating the connection
                 connection.weight = np.random.uniform(
                     *self.config.new_weight_interval)
@@ -483,7 +487,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
         """
         return self.__copy_aux(random_weights=False)
 
-    def process_node(self, n: "ne.neat.genes.NodeGene") -> float:
+    def process_node(self, n: "neat.genes.NodeGene") -> float:
         """ Recursively processes the activation of the given node.
 
         Unless it's a bias or input node (that have a fixed output), a node must
@@ -509,8 +513,8 @@ class NeatGenome(ne.base_genome.BaseGenome):
             The activation value (output) of the node.
         """
         # checking if the node needs to be activated
-        if (n.type != ne.neat.NodeGene.Type.INPUT
-                and n.type != ne.neat.NodeGene.Type.BIAS
+        if (n.type != neat.NodeGene.Type.INPUT
+                and n.type != neat.NodeGene.Type.BIAS
                 and not self._activated_nodes[n.id]):
             # activating the node
             # the current node (n) is immediately marked as activated; this is
@@ -556,7 +560,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
                 the number of input nodes in the network.
         """
         if len(x) != len(self.input_nodes):
-            raise ne.InvalidInputError(
+            raise evo.InvalidInputError(
                 "The input size must match the number of input nodes in the "
                 f"network! Expected input of length {len(self.input_nodes)} "
                 f"but got {len(x)}."
@@ -580,7 +584,7 @@ class NeatGenome(ne.base_genome.BaseGenome):
 
         return h
 
-    def nodes(self) -> List["ne.neat.genes.NodeGene"]:
+    def nodes(self) -> List["neat.genes.NodeGene"]:
         """
         Returns all the genome's node genes. Order: inputs, bias, outputs and
         hidden.
@@ -663,14 +667,14 @@ class NeatGenome(ne.base_genome.BaseGenome):
                 ``other`` is incompatible with the current genome (`self`).
         """
         if not issubclass(type(other), NeatGenome):
-            raise ne.IncompatibleGenomesError(
+            raise evo.IncompatibleGenomesError(
                 "Instances of `NeatGenome` are currently only compatible for "
                 "sexual reproduction with instances of `NeatGenome or one of "
                 "its subclasses!"
             )
 
         # aligning matching genes
-        genes = ne.neat.align_connections(self.connections, other.connections)
+        genes = neat.align_connections(self.connections, other.connections)
 
         # new genome
         new_gen = self.simple_copy()
@@ -702,13 +706,13 @@ class NeatGenome(ne.base_genome.BaseGenome):
                 enabled = True
                 if ((c1 is not None and not c1.enabled)
                         or (c2 is not None and not c2.enabled)):
-                    enabled = not ne.utils.chance(
+                    enabled = not evo.utils.chance(
                         self.config.disable_inherited_connection_chance)
                 chosen_connections.append((c, enabled))
 
                 # adding the hidden nodes of the connection (if needed)
                 for node in (c.from_node, c.to_node):
-                    if (node.type == ne.neat.NodeGene.Type.HIDDEN
+                    if (node.type == neat.NodeGene.Type.HIDDEN
                             and node.id not in copied_nodes):
                         new_node = node.simple_copy()
                         new_gen.hidden_nodes.append(new_node)
@@ -749,17 +753,17 @@ class NeatGenome(ne.base_genome.BaseGenome):
 
     def visualize(self, **kwargs) -> None:
         """ Simple wrapper for the
-        :func:`nevopy.neat.visualization.visualize_genome` function. Please
+        :func:`flight_maneuvers.evolution.neat.visualization.visualize_genome` function. Please
         refer to its documentation for more information.
         """
-        ne.neat.visualize_genome(genome=self, **kwargs)
+        neat.visualize_genome(genome=self, **kwargs)
 
     def visualize_activations(self, **kwargs) -> Any:
         """ Simple wrapper for the
-        :func:`nevopy.neat.visualization.visualize_activations` function. Please
+        :func:`flight_maneuvers.evolution.neat.visualization.visualize_activations` function. Please
         refer to its documentation for more information.
         """
-        return ne.neat.visualize_activations(genome=self, **kwargs)
+        return neat.visualize_activations(genome=self, **kwargs)
 
 
 def _debug_mating(genes, c, gen1, gen2, new_gen):
@@ -848,10 +852,10 @@ class FixTopNeatGenome(NeatGenome):
     """
 
     def __init__(self,
-                 fito_genome: "ne.fixed_topology.FixedTopologyGenome",
+                 fito_genome: "evo.fixed_topology.FixedTopologyGenome",
                  num_neat_inputs: int,
                  num_neat_outputs: int,
-                 config: "ne.neat.config.NeatConfig",
+                 config: "neat.config.NeatConfig",
                  initial_neat_connections: bool = True) -> None:
         super().__init__(num_inputs=num_neat_inputs,
                          num_outputs=num_neat_outputs,

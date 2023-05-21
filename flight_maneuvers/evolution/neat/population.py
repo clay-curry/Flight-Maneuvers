@@ -1,7 +1,7 @@
 
 """ Implementation of the main mechanisms of the NEAT algorithm.
 
-This is the main module of `NEvoPy's` implementation of the NEAT algorithm. It
+This is the main module of `flight_maneuvers.evolution's` implementation of the NEAT algorithm. It
 implements the :class:`.NeatPopulation` class, which handles the evolution of a
 population/community of NEAT genomes.
 """
@@ -10,25 +10,25 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from nevopy.utils import utils
-from nevopy.base_population import BasePopulation
-from nevopy.callbacks import Callback
-from nevopy.callbacks import CompleteStdOutLogger
-from nevopy.callbacks import History
-from nevopy.callbacks import SimpleStdOutLogger
-from nevopy.neat.config import NeatConfig
-from nevopy.neat.genes import NodeGene
-from nevopy.neat.genomes import NeatGenome
-from nevopy.neat.id_handler import IdHandler
-from nevopy.neat.species import NeatSpecies
-from nevopy.processing.base_scheduler import ProcessingScheduler
-from nevopy.processing.pool_processing import PoolProcessingScheduler
+from flight_maneuvers.evolution import utils
+from flight_maneuvers.evolution.base_population import BasePopulation
+from flight_maneuvers.evolution.callbacks import Callback
+from flight_maneuvers.evolution.callbacks import CompleteStdOutLogger
+from flight_maneuvers.evolution.callbacks import History
+from flight_maneuvers.evolution.callbacks import SimpleStdOutLogger
+from flight_maneuvers.evolution.neat.config import NeatConfig
+from flight_maneuvers.evolution.neat.genes import NodeGene
+from flight_maneuvers.evolution.neat.genomes import NeatGenome
+from flight_maneuvers.evolution.neat.id_handler import IdHandler
+from flight_maneuvers.evolution.neat.species import NeatSpecies
+from flight_maneuvers.evolution.processing.base_scheduler import ProcessingScheduler
+from flight_maneuvers.evolution.processing.pool_processing import PoolProcessingScheduler
 
 
 class NeatPopulation(BasePopulation):
     """ Population of individuals (genomes) to be evolved by the NEAT algorithm.
 
-    Main class of `NEvoPy's` implementation of the NEAT algorithm. It represents
+    Main class of `flight_maneuvers.evolution's` implementation of the NEAT algorithm. It represents
     a population of individuals (genomes) to be evolved. The correct term, in
     NEAT's case, is actually "community" (group of populations of two or more
     different species) rather than "population" (subset of individuals of one

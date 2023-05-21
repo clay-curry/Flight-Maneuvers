@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 from scipy.ndimage import rotate
 import plotly.graph_objects as go
-from examples.dash import Dash, dcc, html
+from flask import Dash, dcc, html
 from dash.dependencies import Input, Output
 
 dataloader = FlightTrajectoryDataModule(num_test=10).test_dataloader()

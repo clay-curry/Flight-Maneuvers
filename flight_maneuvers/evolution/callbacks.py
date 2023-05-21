@@ -1,7 +1,7 @@
 
 """ Defines a base interface for all callbacks and implements simple callbacks.
 
-For NEvoPy, callbacks are utilities called at certain points during the
+For flight_maneuvers.evolution, callbacks are utilities called at certain points during the
 evolution of a population. They are a powerful tool to customize the behavior of
 a neuroevolutionary algorithm.
 
@@ -40,10 +40,10 @@ import matplotlib.pyplot as plt
 from click import style
 from columnar import columnar
 
-from nevopy.utils import utils  # pylint: disable=wrong-import-position
+from flight_maneuvers.evolution import utils  # pylint: disable=wrong-import-position
 
 if TYPE_CHECKING:
-    from nevopy.base_population import BasePopulation
+    from flight_maneuvers.evolution.base_population import BasePopulation
 
 _logger = logging.getLogger(__name__)
 
@@ -51,14 +51,14 @@ _logger = logging.getLogger(__name__)
 class Callback(ABC):
     """ Abstract base class used to build new callbacks.
 
-    This class defines the general structure of the callbacks used by `NEvoPy's`
+    This class defines the general structure of the callbacks used by `flight_maneuvers.evolution's`
     neuroevolutionary algorithms. It's not required for a subclass to implement
     all the methods of this class (you can implement only those that will be
     useful for your case).
 
     Attributes:
         population (BasePopulation): Reference to the instance of a subclass of
-            :class:`.Population` being evolved by one of `NEvoPy's`
+            :class:`.Population` being evolved by one of `flight_maneuvers.evolution's`
             neuroevolutionary algorithms.
     """
 

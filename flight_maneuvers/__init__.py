@@ -1,9 +1,6 @@
 from .__about__ import *
 
-# path pointing to a dataset of simulated flight trajectories with labeled maneuvers
-DATASET_PATH = 'examples/maneuver_dataset'
-# path pointing to experiment results
-CHECKPOINT_PATH = 'saved_models'
+
 
 __all__ = [
     "__title__",
@@ -21,4 +18,6 @@ try:
     __all__ += ['modules']
 except ImportError:
     pass
+
+from flight_maneuvers.evolution import *
 

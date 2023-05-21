@@ -1,6 +1,6 @@
 
 """ This module implements the :class:`.FixedTopologyConfig` class, used to
-handle the settings of `NEvoPy's` fixed-topology neuroevolutionary algorithms.
+handle the settings of `flight_maneuvers.evolution's` fixed-topology neuroevolutionary algorithms.
 """
 
 from typing import Dict

@@ -8,8 +8,8 @@ from typing import List
 
 import numpy as np
 
-from nevopy.fixed_topology.layers.base_layer import BaseLayer
-from nevopy.fixed_topology.layers.base_layer import IncompatibleLayersError
+from flight_maneuvers.evolution.fixed_topology.layers.base_layer import BaseLayer
+from flight_maneuvers.evolution.fixed_topology.layers.base_layer import IncompatibleLayersError
 
 
 def check_weights_compatibility(weight_list1: List[np.ndarray],
