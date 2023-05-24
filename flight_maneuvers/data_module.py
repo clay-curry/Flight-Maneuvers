@@ -6,15 +6,7 @@ import numpy as np
 import pandas as pd
 from math import inf
 from typing import List, Sized, Iterator
-from lightning import LightningDataModule
-
-from flight_maneuvers import DATASET_PATH
-
-
-# path pointing to a dataset of simulated flight trajectories with labeled maneuvers
-DATASET_PATH = 'examples/maneuver_dataset'
-
-MANEUVERS = ['takeoff', 'turn', 'line', 'orbit', 'landing']
+import lightning as L
 
 
 def sample_timeseries(trajectory, sampling_period=1, max_length=inf):
@@ -77,9 +69,9 @@ class DirectorySampler(torch.utils.data.Sampler):
     def __len__(self) -> int: return math.ceil(len(self.n_files) / self.batch_size)
 
     
-class FlightTrajectoryDataModule(LightningDataModule):
+class FlightTrajectoryDataModule(L.LightningDataModule):
     
-    def __init__(self, num_train=1, num_valid=1, num_test=1, data_dir=DATASET_PATH, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
+    def __init__(self, num_train=1, num_valid=1, num_test=1, data_dir=TRAIN_DATA_DIR, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
         super().__init__()
         self.save_hyperparameters()
 

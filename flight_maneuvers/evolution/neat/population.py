@@ -218,6 +218,96 @@ class NeatPopulation(BasePopulation):
             A :class:`.History` object containing useful information recorded
             during the evolutionary process.
         """
+
+
+        callbacks, history_callback = self._prepare_to_evolve(callbacks, verbose)
+
+        generation_num = 0
+        for generation_num in range(generations):
+            # callback: on_generation_start
+            [cb.on_generation_start(generation_num, generations) for cb in callbacks]
+
+            # calculating fitness
+            fitness_results = self.scheduler.run(items=self.genomes, func=fitness_function)  # type: Sequence[float]
+
+            # assigning fitness and adjusted fitness
+            for genome, fitness in zip(self.genomes, fitness_results):
+                genome.fitness = fitness
+                sp = self.species[genome.species_id]
+                genome.adj_fitness = genome.fitness / len(sp.members)
+            best = self.fittest()
+
+            # counting max number of hidden nodes in one genome
+            self.__max_hidden_nodes = np.max([len(g.hidden_nodes) for g in self.genomes])
+
+            # counting max number of hidden connections in one genome
+            self.__max_hidden_connections = np.max([
+                len([c for c in g.connections
+                     if (c.enabled
+                         and (c.from_node.type == NodeGene.Type.HIDDEN
+                              or c.to_node.type == NodeGene.Type.HIDDEN))
+                     ])
+                for g in self.genomes
+            ])
+
+            # callback: on_fitness_calculated
+            for cb in callbacks:
+                cb.on_fitness_calculated(
+                    best_fitness=best.fitness,
+                    avg_fitness=self.average_fitness(),
+                    max_hidden_nodes=self.__max_hidden_nodes,
+                    max_hidden_connections=self.__max_hidden_connections
+                )
+
+            # checking improvements
+            improv_diff = best.fitness - self._past_best_fitness
+            improv_min_pc = self._config.maex_improvement_threshold_pc
+            if improv_diff >= abs(self._past_best_fitness * improv_min_pc):
+                self._mass_extinction_counter = 0
+                self._past_best_fitness = best.fitness
+            else:
+                self._mass_extinction_counter += 1
+            self._config.update_mass_extinction(self._mass_extinction_counter)
+
+            # callback: on_mass_extinction_counter_updated
+            [cb.on_mass_extinction_counter_updated(self._mass_extinction_counter) for cb in callbacks]
+
+            # checking mass extinction
+            if (self._mass_extinction_counter >= self._config.mass_extinction_threshold):
+                # callback: on_mass_extinction_start
+                [cb.on_mass_extinction_start() for cb in callbacks]
+
+                # mass extinction
+                self._mass_extinction_counter = 0
+                self.genomes = [best] + [self._random_genome_with_extras() for _ in range(self._size - 1)]
+                assert len(self.genomes) == self._size
+            else:
+                # callback: on_reproduction_start
+                [cb.on_reproduction_start() for cb in callbacks]
+
+                # reproduction
+                self.reproduction()
+
+            # callback: on_speciation_start
+            [cb.on_speciation_start(invalid_genoems_replaced=self._invalid_genomes_replaced) for cb in callbacks]
+
+            # speciation
+            self.speciation(generation=generation_num)
+
+            # callback: on_generation_end
+            [cb.on_generation_end(generation_num, generations) for cb in callbacks]
+
+            # early stopping
+            if self.stop_evolving:
+                break
+
+        # callback: on_evolution_end
+        [cb.on_evolution_end(generation_num) for cb in callbacks]
+
+        return history_callback
+
+
+    def _prepare_to_evolve(self, callbacks, verbose):
         # preparing callbacks
         if callbacks is None:
             callbacks = []
@@ -239,108 +329,8 @@ class NeatPopulation(BasePopulation):
 
         # evolving
         self.stop_evolving = False
-        generation_num = 0
-        for generation_num in range(generations):
-            # callback: on_generation_start
-            for cb in callbacks:
-                cb.on_generation_start(generation_num, generations)
-
-            # calculating fitness
-            fitness_results = self.scheduler.run(
-                items=self.genomes,
-                func=fitness_function
-            )  # type: Sequence[float]
-
-            # assigning fitness and adjusted fitness
-            for genome, fitness in zip(self.genomes, fitness_results):
-                genome.fitness = fitness
-                sp = self.species[genome.species_id]
-                genome.adj_fitness = genome.fitness / len(sp.members)
-            best = self.fittest()
-
-            # counting max number of hidden nodes in one genome
-            self.__max_hidden_nodes = np.max([len(g.hidden_nodes)
-                                              for g in self.genomes])
-
-            # counting max number of hidden connections in one genome
-            self.__max_hidden_connections = np.max([
-                len([c for c in g.connections
-                     if (c.enabled
-                         and (c.from_node.type == NodeGene.Type.HIDDEN
-                              or c.to_node.type == NodeGene.Type.HIDDEN))
-                     ])
-                for g in self.genomes
-            ])
-
-            # callback: on_fitness_calculated
-            avg_fitness = self.average_fitness()
-            for cb in callbacks:
-                cb.on_fitness_calculated(
-                    best_fitness=best.fitness,
-                    avg_fitness=avg_fitness,
-                    max_hidden_nodes=self.__max_hidden_nodes,
-                    max_hidden_connections=self.__max_hidden_connections
-                )
-
-            # checking improvements
-            improv_diff = best.fitness - self._past_best_fitness
-            improv_min_pc = self._config.maex_improvement_threshold_pc
-            if improv_diff >= abs(self._past_best_fitness * improv_min_pc):
-                self._mass_extinction_counter = 0
-                self._past_best_fitness = best.fitness
-            else:
-                self._mass_extinction_counter += 1
-            self._config.update_mass_extinction(self._mass_extinction_counter)
-
-            # callback: on_mass_extinction_counter_updated
-            for cb in callbacks:
-                cb.on_mass_extinction_counter_updated(
-                    self._mass_extinction_counter
-                )
-
-            # checking mass extinction
-            if (self._mass_extinction_counter
-                    >= self._config.mass_extinction_threshold):
-                # callback: on_mass_extinction_start
-                for cb in callbacks:
-                    cb.on_mass_extinction_start()
-
-                # mass extinction
-                self._mass_extinction_counter = 0
-                self.genomes = [best] + [self._random_genome_with_extras()
-                                         for _ in range(self._size - 1)]
-                assert len(self.genomes) == self._size
-            else:
-                # callback: on_reproduction_start
-                for cb in callbacks:
-                    cb.on_reproduction_start()
-
-                # reproduction
-                self.reproduction()
-
-            # callback: on_speciation_start
-            for cb in callbacks:
-                cb.on_speciation_start(
-                    invalid_genoems_replaced=self._invalid_genomes_replaced,
-                )
-
-            # speciation
-            self.speciation(generation=generation_num)
-
-            # callback: on_generation_end
-            for cb in callbacks:
-                cb.on_generation_end(generation_num, generations)
-
-            # early stopping
-            if self.stop_evolving:
-                break
-
-        # callback: on_evolution_end
-        for cb in callbacks:
-            cb.on_evolution_end(generation_num)
-
-        return history_callback
-
+        return callbacks, history_callback
+                           
     def _random_genome_with_extras(self) -> NeatGenome:
         """ Creates a new random genome with extra hidden nodes and connections.
 
@@ -474,8 +464,7 @@ class NeatPopulation(BasePopulation):
 
         # elitism
         for sp in self.species.values():
-            sp.members.sort(key=lambda genome: genome.fitness,
-                            reverse=True)
+            sp.members.sort(key=lambda genome: genome.fitness, reverse=True)
 
             # preserving the most fit individual
             if len(sp.members) >= self._config.species_elitism_threshold:
@@ -485,8 +474,7 @@ class NeatPopulation(BasePopulation):
             r = int(len(sp.members) * self._config.weak_genomes_removal_pc)
             if 0 < r < len(sp.members):
                 r = len(sp.members) - r
-                for g in sp.members[r:]:
-                    self.genomes.remove(g)
+                [self.genomes.remove(g) for g in sp.members[r:]]
                 sp.members = sp.members[:r]
 
         # calculating the number of children for each species
@@ -506,10 +494,7 @@ class NeatPopulation(BasePopulation):
                 prob = prob / prob_sum
 
             # generating offspring
-            babies = [self.generate_offspring(species=sp,
-                                              rank_prob_dist=prob)
-                      for _ in range(offspring_count[sp.id])]
-            new_pop += babies
+            new_pop += [self.generate_offspring(species=sp, rank_prob_dist=prob) for _ in range(offspring_count[sp.id])]
 
         assert len(new_pop) == self._size
         self.genomes = new_pop
@@ -630,8 +615,7 @@ class NeatPopulation(BasePopulation):
             # creating a new species, if needed
             if chosen_species is None:
                 sid = self._id_handler.next_species_id()
-                chosen_species = NeatSpecies(species_id=sid,
-                                             generation=generation)
+                chosen_species = NeatSpecies(species_id=sid, generation=generation)
                 chosen_species.representative = genome
                 self.species[chosen_species.id] = chosen_species
 

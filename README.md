@@ -3,7 +3,7 @@
 <h1>Steerable Inductive Biases for Flight Maneuver Reconstruction</h1>
 
 <h4><b>Clayton Curry</b></h4>
-
+WORK IN PROGRESS, contributions are welcome (see project board for remaining tasks)
 <br>
 
 [![Blog: Flight Maneuvers](https://img.shields.io/badge/Blog-Flight%20Maneuvers-blue)](https://claycurry.com/blog/maneuver)
