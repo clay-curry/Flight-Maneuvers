@@ -1,4 +1,4 @@
-from flight_maneuvers.data_module import FlightTrajectoryDataModule
+from flight_maneuvers.data.dataset_utils import FlightTrajectoryDataModule
 from flight_maneuvers.utils import plot_scenario_3d
 
 

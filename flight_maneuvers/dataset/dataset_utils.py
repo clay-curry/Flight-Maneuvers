@@ -8,30 +8,10 @@ from math import inf
 from typing import List, Sized, Iterator
 import lightning as L
 
+# path pointing to a dataset of simulated flight trajectories with labeled maneuvers
+TRAIN_DATA_DIR = 'maneuver_dataset'
 
-def sample_timeseries(trajectory, sampling_period=1, max_length=inf):
-    """ loads and resamples a trajectory to a fixed sampling period and maximum length
 
-    Args:
-        trajectory: path to a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
-        sampling_period: the desired sampling period in seconds
-        max_length: the maximum length of the resampled trajectory
-
-    Returns:
-        a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
-    """
-    # load the trajectory and convert the 't' column to a DatetimeIndex
-    trajectory = pd.read_csv(trajectory)
-
-    # initialize resampled_trajectory with the first row of trajectory
-    resampled_trajectory = trajectory.iloc[::sampling_period]
-
-    # trim the trajectory to the desired maximum length
-    if len(resampled_trajectory) > max_length:
-        resampled_trajectory = resampled_trajectory.iloc[:max_length]
-
-    resampled_trajectory = resampled_trajectory.reset_index(drop=True)
-    return resampled_trajectory
 
 # each training example consists of a variable-length, simulated flight trajectory with labeled maneuvers at each timestep
 class FlightTrajectoryDataset(torch.utils.data.Dataset):
@@ -69,7 +49,7 @@ class DirectorySampler(torch.utils.data.Sampler):
     def __len__(self) -> int: return math.ceil(len(self.n_files) / self.batch_size)
 
     
-class FlightTrajectoryDataModule(L.LightningDataModule):
+class FlightTrajectoryDataModule:
     
     def __init__(self, num_train=1, num_valid=1, num_test=1, data_dir=TRAIN_DATA_DIR, batch_size=1, sampling_period=60, max_sample_length=256) -> None:
         super().__init__()

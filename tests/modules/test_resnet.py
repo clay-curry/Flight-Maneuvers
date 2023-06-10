@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from flight_maneuvers.utils import *
 from flight_maneuvers.modules.resnet import ResNet
-from flight_maneuvers.data_module import MANEUVERS, FlightTrajectoryDataModule
+from flight_maneuvers.data.dataset_utils import MANEUVERS, FlightTrajectoryDataModule
 
 class TestResnet(TestCase):
     

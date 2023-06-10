@@ -1,6 +1,3 @@
-# path pointing to a dataset of simulated flight trajectories with labeled maneuvers
-TRAIN_DATA_DIR = 'maneuver_dataset'
-
 # path pointing to a dataset of experiment logs, consisting of checkpoints and tensorboard logs
 LOG_FILE_DIR = 'logs/eval'
 

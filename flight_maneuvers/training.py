@@ -17,14 +17,14 @@ from lightning.fabric.wrappers import _unwrap_objects
 from lightning.pytorch.utilities.model_helpers import is_overridden
 
 from flight_maneuvers.utils import *
-from flight_maneuvers.data_module import FlightTrajectoryDataModule
+from flight_maneuvers.data.dataset_utils import FlightTrajectoryDataModule
 
 
 # path pointing to experiment results
 CHECKPOINT_PATH = 'logs/checkpoints'
 VALIDATE_EVERY_N_STEPS = 50
 
-class NEAT_TrainingModule(L.LightningModule):
+class ManeuverModule(L.LightningModule):
     def __init__(self, 
                  model_name, 
                  optimizer=torch.optim.Adam, 
@@ -624,7 +624,7 @@ def train(model: torch.nn.Module, seed, num_train, num_valid, max_steps, hparams
     L.seed_everything(seed)
     data_module = FlightTrajectoryDataModule(num_train=num_train, num_valid=num_valid, num_test=100)
     
-    litmodel = NEAT_TrainingModule(model, **hparams)
+    litmodel = ManeuverModule(model, **hparams)
 
     tb_logger = TensorBoardLogger(CHECKPOINT_PATH, name='resnet-'+str(num_train)+'-train')
     early_stopping = EarlyStopping(monitor='val_loss', mode='max', patience=15)

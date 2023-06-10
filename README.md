@@ -3,59 +3,85 @@
 <h1>Steerable Inductive Biases for Flight Maneuver Reconstruction</h1>
 
 <h4><b>Clayton Curry</b></h4>
-WORK IN PROGRESS, contributions are welcome (see project board for remaining tasks)
 <br>
 
 [![Blog: Flight Maneuvers](https://img.shields.io/badge/Blog-Flight%20Maneuvers-blue)](https://claycurry.com/blog/maneuver)
-[![Flask Project Demo](https://img.shields.io/badge/Flask-Project%20Demo-ff69b4)](https://claycurry.com/blog/maneuvers)
+[![Draft Project Report](https://img.shields.io/badge/PDF-Draft%20Report-ff69b4)](https://claycurry.com/Curry%20-%20Flight%20Maneuvers%20%28draft%20report%29.pdf)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/13U6SEHBlYxXKCvmLBXeERzIb5dt2lEfA?usp=sharing)
 [![Github Repo](https://img.shields.io/static/v1.svg?logo=github&label=repo&message=see%20project&color=blueviolet)](https://github.com/clay-curry/Flight-Maneuvers) 
 
-</div>
+</div> 
 
-### Todo List
+**note:**
 
-Project
-* <s>implement utilities for loading flight scenarios, pre-processing and post-processing, and visualizing predicted maneuvers in a Flask application </s>
-* <s>implement `trainer(model, training_data)` that relies on Adam to optimize model weights in a fixed number of gradient steps </s>
-* <s>implement `resnet.py` (confirm convergence) </s>
-* <s>implement `se3_resnet.py` on a 1D signal (confirm convergence) </s>
-* implement `se2_resnet.py` on a 1D signal (confirm convergence)
-* choose a suitable algorithm for use in `neural_search` 
-* for each flight maneuver, list the resulting precision and recall values for each maneuver class together with confidence intervals
-* for each model, plot precision and recall values and show trends as training examples vary
-* evolve candidate models for `resnet.py`,  `se2_resnet.py`, and `se3_resnet.py`' by: 
-  - fitness function: - Binary Cross-Entropy Loss, 
-  - varying the number of convolution layers, kernel size, kernel width, fully connected layer width
-  - constaining the a weight space to have fixed computer memory
-  - the same training set, validation set, and test set 
-* with each candidate, obtain confidence intervals for precision and recall (per maneuver class) using bootstrapping
-* plot a table that, for each flight maneuver, reports precision and recall for each maneuver class together with confidence intervals
-
-Report
-* describe related works and their relation to concepts in representation theory and harmonic function theory 
-* relate the physical symmetries of the label function to actions of $SE(3)$ and $SE(2)$ 
-* show the derivation for one `resnet`
-* show the derivation for one `se2_resnet` equivariant convolution layer 
-* show the derivation for one `se3_resnet` equivariant convolution layer
-* describe how models are evolved
-* explain trends, update claims in the abstract (if necessary), and describe how the findings support the hypothesis
-* conclusions and future work
-
+* this project is ongoing and remains under active development (see [draft report here](https://claycurry.com/Curry%20-%20Flight%20Maneuvers%20%28draft%20report%29.pdf)),
+* contributions and / or improvements are welcome (make a pull request),
+* remaining tasks are documented under the [Steerable Flight Maneuvers](https://github.com/users/clay-curry/projects/1)
 
 ## Description
-TODO
+Rapid innovation in drone-based technology for commercial and consumer-centric applications have intensified the demand for intelligent airspace monitoring systems capable of [automatic target recognition](https://en.wikipedia.org/wiki/Automatic_target_recognition) (ATR) with post-hoc interpretability. In this project, a proof-of-concept software system is developed to showcase that such functionality can be transformer neural networks can be trained for ATR. 
 
+For ease of reproducibility, this project is supported on the Python Package Index with relevant data hosted on Kaggle.
 
 ### Related Projects
 
-* [escnn](https://github.com/QUVA-Lab/escnn)
-* [e3nn](https://github.com/e3nn/e3nn/)
-* [geometric gnn dojo](https://github.com/chaitjo/geometric-gnn-dojo)
-* [e3nn-jax](https://github.com/e3nn/e3nn-jax)
-* [equivariant-MLP](https://github.com/mfinzi/equivariant-MLP)
-* [SignNet-BasisNet](https://github.com/cptq/SignNet-BasisNet)
-* [mace-jax](https://github.com/ACEsuit/mace-jax)
+* [Escnn (QUVA-Lab)](https://github.com/QUVA-Lab/escnn)
+* [e3nn (Lawrence Berkeley National Laboratory)](https://github.com/e3nn/e3nn/)
+* [Megatron-LM (NVIDIA)](https://github.com/NVIDIA/Megatron-LM)
+* [Modulus (NVIDIA)](https://github.com/NVIDIA/modulus)
+
+## Prerequsites
+
+The following illustration depicts the proper setting in which our project is intended to function:
+
+![Airspace Monitoring System](assets/airspace_monitoring_system.png "Airspace Monitoring System")
+
+More information (exceeding the scope of this project) regarding the structure of airspace monitoring systems can be found in the following references:
+* [How Radars Work (MATLAB)](https://www.mathworks.com/discovery/how-do-radars-work.html)
+* [Track multiple objects in autonomous and surveillance applications](https://www.mathworks.com/discovery/multi-object-tracking.html)
+* [Fundamentals of Object Tracking](https://www.cambridge.org/core/books/fundamentals-of-object-tracking/A543B0EA12957B353BE4B5D0602EE945)
+* [Advances in Statistical Multisource-Multitarget Information Fusion](https://www.vitalsource.com/products/advances-in-statistical-multisource-multitarget-ronald-p-s-mahler-v9781608077991?duration=perpetual&utm_source=bing&utm_medium=cpc&utm_campaign=Catch%20AllGoogle-US&msclkid=bf38ee6c5721119d10418aefb5cc39e0)
+
+## Assumptions
+
+### ATR
+`TODO`
+
+### Observed and Latent Variables
+In our work, 'trajectory' refers to an abstract, time-evolving state containing the kinematic variables (velocity and position) of an aircraft observed with fixed, discrete sampling.
+Coinciding with each state is a non-observable 'maneuver' describing the action taken by the agent to influence control over the state of the aircraft at each timestep.
+The following figure illustrates a top-down view of a particular episode of this process,
+
+![Overhead](assets/overhead_scene_view.png "Overhead")
+
+where color-coded rectangles correspond to instantanously observed maneuvers and color-coded arrows encode the instantanous velocity portion of the states.
+The set of all actions that could be taken is assumed to be finite, and the agent's choices are assumed to be Markovian.
+
+The trustworthiness of any ATR system depends on its ability to identify and logically reason with the fundamental uncertainty involved in recognizing targets.
+Crucially, we assume (reasonably) that each trajectory is a stochastic processes with probability density uniquely corresponding to the identity of the aircraft that produced the trajectory.
+Provided knowledge of this distribution for any particular target, the ATR system can then return a likelihood.
+
+### Problem Statement
+
+Having defined all the terms, we can adequately account for the are ready to state the problem  
+
+A set trajectories  are obtained by independently drawing examples from a 
+
+![Stochastic](assets/stochastic_distributions.png "Stochastic")
+
+
+
+
+Using labeled examples we can train one transformer to estimate latent maneuvers, conditioned on the given states
+
+
+![Training](assets/training.png "Training")
+
+
+
+![Inference](assets/inference.png "Inference")
+
+
 
 ## Directory Structure and Usage
 
