@@ -1,12 +1,7 @@
 import torch
 import torch.nn as nn
 from itertools import tee
-
-def pairwise(iterable):
-    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
-    a, b = tee(iterable)
-    next(b, None)
-    return enumerate(zip(a, b))
+from flight_maneuvers.data.features import count_features
 
 class ResNetBlock(nn.Module):
 
@@ -18,11 +13,10 @@ class ResNetBlock(nn.Module):
             subsample - If True, we want to apply a stride inside the block and reduce the output shape by 2 in height and width
             c_out - Number of output features. Note that this is only relevant if subsample is True, as otherwise, c_out = c_in
         """
-        super().__init__()
-
-                
+        super().__init__()     
+        # linear
         self.proj = nn.Conv1d(c_in, c_out, kernel_size=1, padding='same', bias=False)
-        # Network representing F
+        # residual
         self.net = nn.Sequential(
             nn.Conv1d(c_in, c_out, kernel_size=k_size, padding='same', bias=False),  # No bias needed as the Batch Norm handles it
             nn.BatchNorm1d(c_out),
@@ -98,13 +92,9 @@ class ResNet(nn.Module):
         super().__init__()
         assert block_name in resnet_block_types
         self.act_fn_name = act_fn_name
-        
-        state_dim = 1
-        state_dim += 3 if 'dpos' in kwargs['features'] else 0
-        state_dim += 3 if 'vel' in kwargs['features'] else 0
-        state_dim += 3 if 'dvel' in kwargs['features'] else 0
-        state_dim += 2 if 'pos' in kwargs['features'] else 0
-        
+
+        state_dim = count_features(kwargs['feature_hparams'])
+                
         # A first convolution on the original image to scale up the channel size
         self.input_net = nn.Sequential(
                 nn.Conv1d(state_dim, c_hidden[0], kernel_size=kernel_size, padding="same", bias=False)

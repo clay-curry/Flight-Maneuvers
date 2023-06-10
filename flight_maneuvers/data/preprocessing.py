@@ -1,20 +1,21 @@
-import torch
-import numpy as np
-import pandas as pd
+def count_features(feature_hparams):
+    """ counts the number of features in a trajectory
 
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import matplotlib.pyplot as plt
+    Args:
+        trajectory: a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
 
-from flight_maneuvers.data.dataset_utils import MANEUVERS
-from flight_maneuvers.modules.resnet import ResNet, PreActResNetBlock
-from flight_maneuvers.data.dataset_utils import FlightTrajectoryDataModule
+    Returns:
+        the number of features in the trajectory
+    """
+    n_features = 0
+    n_features += 1 if 'alt' in feature_hparams else 0
+    n_features += 2 if 'pos' in feature_hparams else 0
+    n_features += 3 if 'vel' in feature_hparams else 0
+    n_features += 3 if 'dpos' in feature_hparams else 0
+    n_features += 3 if 'dvel' in feature_hparams else 0
+    return n_features
 
-tokenize_maneuvers = np.vectorize(lambda id: MANEUVERS.index(id))
-
-
-def preprocess_trajectory(raw_signal, feature_hparams):
+def select_features(raw_signal, feature_hparams):
     """ computes the delta of a trajectory
 
     Args:
@@ -23,9 +24,9 @@ def preprocess_trajectory(raw_signal, feature_hparams):
     Returns:
         a pandas dataframe with columns x, y, z, vx, xy, vz, dx, dy, dz, dvx, dvy, dvz, maneuver
     """
-    maneuvers = tokenize_maneuvers(raw_signal['maneuver'])
-    trajectory = raw_signal[['z']]
-    
+    if 'maneuver' in feature_hparams:
+        trajectory['maneuver'] = raw_signal['maneuver']
+        
     if 'pos' in feature_hparams:
         trajectory['x'] = raw_signal['x']
         trajectory['y'] = raw_signal['y']
@@ -34,6 +35,9 @@ def preprocess_trajectory(raw_signal, feature_hparams):
         trajectory['vx'] = raw_signal['vx']
         trajectory['vy'] = raw_signal['vy']
         trajectory['vz'] = raw_signal['vz']
+
+    if 'alt' in feature_hparams:
+        trajectory['z'] = raw_signal['z']
 
     if 'dpos' in feature_hparams:
         trajectory = trajectory.assign(dx=raw_signal['x'].diff())
@@ -47,22 +51,20 @@ def preprocess_trajectory(raw_signal, feature_hparams):
         trajectory = trajectory.assign(dvz=raw_signal['vz'].diff())
         trajectory['dvx'].iloc[0] = trajectory['dvy'] = trajectory['dvz'] = 0
     # initialize delta_trajectory with the first row of trajectory
-    return torch.tensor(trajectory.values, dtype=torch.float32), torch.tensor(maneuvers)
+    return trajectory.values
 
-def postprocess_joint(joint_dist):
-    """ casts joint distribution to a dataframe, and appends the predicted maneuver
+def get_trajectory(trajectory, sampling_period, max_length, features):
+    """ loads a trajectory from a pandas dataframe
+
+    Args:
+        trajectory: a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
     """
-    joint_df = pd.DataFrame({
-            'takeoff': joint_dist[:, 0],
-            'turn': joint_dist[:, 1],
-            'line': joint_dist[:, 2],
-            'orbit': joint_dist[:, 3],
-            'landing': joint_dist[:, 4]
-        })
-    joint_df['maneuver'] = joint_df.idxmax(axis="columns")
-    return joint_df
+    df = pd.read_csv(trajectory)
+    df = sample_timeseries(df, sampling_period, max_length)
+    df = select_features(df, features)
+    return df
 
-def sample_timeseries(trajectory, sampling_period=1, max_length=inf):
+def sample_timeseries(trajectory, sampling_period, max_length):
     """ loads and resamples a trajectory to a fixed sampling period and maximum length
 
     Args:
@@ -84,4 +86,5 @@ def sample_timeseries(trajectory, sampling_period=1, max_length=inf):
         resampled_trajectory = resampled_trajectory.iloc[:max_length]
 
     resampled_trajectory = resampled_trajectory.reset_index(drop=True)
+
     return resampled_trajectory

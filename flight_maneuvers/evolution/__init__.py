@@ -7,7 +7,6 @@ from flight_maneuvers.evolution import callbacks
 from flight_maneuvers.evolution import fixed_topology
 from flight_maneuvers.evolution import neat
 from flight_maneuvers.evolution import processing
-from flight_maneuvers.evolution import utils
 
 from flight_maneuvers.evolution.base_genome import BaseGenome
 from flight_maneuvers.evolution.base_genome import IncompatibleGenomesError

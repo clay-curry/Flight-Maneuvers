@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from flight_maneuvers.utils import *
 from flight_maneuvers.modules.resnet import ResNet
-from flight_maneuvers.data.dataset_utils import MANEUVERS, FlightTrajectoryDataModule
+from flight_maneuvers.data.datamodule import MANEUVERS, FlightTrajectoryDataModule
 
 class TestResnet(TestCase):
     
@@ -30,7 +30,7 @@ class TestResnet(TestCase):
         }
         model = ResNet(**model_params)
         for batch in FlightTrajectoryDataModule().train_dataloader():
-            x, maneuver = preprocess_trajectory(batch[0])
+            x, maneuver = select_features(batch[0])
             out = model.forward(x)
             self.assertEqual(out.shape, (x.shape[0], model_params["num_maneuvers"]))
 

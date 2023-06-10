@@ -1,19 +1,15 @@
-# path pointing to a dataset of experiment logs, consisting of checkpoints and tensorboard logs
-LOG_FILE_DIR = 'logs/eval'
 
-# categorical maneuvers assigned to the projectile at each timestep
-MANEUVERS = ['takeoff', 'turn', 'line', 'orbit', 'landing']
-
-
-__all__ = [
-    "TRAIN_DATA_DIR",
-    "LOG_FILE_DIR",
-    "MANEUVERS",
-]
+__all__ = [ ]
 
 try:
-    from flight_maneuvers import modules
-    __all__ += ['modules']
+    from flight_maneuvers import data
+    __all__ += ['data']
+except ImportError:
+    pass
+
+try:
+    from flight_maneuvers import models
+    __all__ += ['models']
 except ImportError:
     pass
 
