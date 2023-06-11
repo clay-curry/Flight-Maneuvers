@@ -11,17 +11,6 @@ from escnn.gspaces import *
 from escnn.nn import *
 from escnn.nn.modules.pointconv import R3PointConv
 
-def make_edge_idx(n):
-    return torch.stack([
-            torch.hstack(
-                [torch.arange(1, n, dtype=torch.long),
-                 torch.arange(0, n-1, dtype=torch.long)]
-            ),
-            torch.hstack(
-                [torch.arange(0, n-1, dtype=torch.long),
-                 torch.arange(1, n, dtype=torch.long)]
-            ),
-        ])
 
 class SE3_PreActResNetBlock(EquivariantModule):
     pass

@@ -1,8 +1,7 @@
 import unittest
 from unittest import TestCase
 
-from flight_maneuvers.utils import *
-from flight_maneuvers.modules.se3_resnet import SE3_ResNet
+from flight_maneuvers.models.se3_gnn.se3_resnet import SE3_ResNet
 from flight_maneuvers.data.datamodule import MANEUVERS, FlightTrajectoryDataModule
 
 class TestResnet(TestCase):

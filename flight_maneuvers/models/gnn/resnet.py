@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from itertools import tee
-from flight_maneuvers.data.features import count_features
+from flight_maneuvers.data.preprocessing import pairwise
 
 class ResNetBlock(nn.Module):
 
@@ -90,10 +89,9 @@ class ResNet(nn.Module):
             block_name - Name of the ResNet block, looked up in "resnet_blocks_by_name"
         """
         super().__init__()
+        state_dim = 12
         assert block_name in resnet_block_types
         self.act_fn_name = act_fn_name
-
-        state_dim = count_features(kwargs['feature_hparams'])
                 
         # A first convolution on the original image to scale up the channel size
         self.input_net = nn.Sequential(

@@ -2,106 +2,63 @@ import os
 import torch
 import random
 import numpy as np
-from tqdm import tqdm
+from itertools import tee
 from functools import partial
 from collections.abc import Mapping
 from typing import Any, cast, Iterable, List, Literal, Optional, Tuple, Union
 
-from flight_maneuvers.loggers import * 
-from flight_maneuvers.data.datamodule import FlightTrajectoryDataModule
+from flight_maneuvers.models.loggers import * 
+from flight_maneuvers.models.checkpoint import load_checkpoint
+from flight_maneuvers.core.constants import default_hparams
 
-class ModelGym:
-    def __init__(self, 
-                 model_type,
-                 **hparams
-        ):
+class Trainer:
+    def __init__(self, **hparams):
         """
         Inputs:
             model_type - Name of the model/CNN to run. Used for creating the model (see function below)
             model_hparams - Hyperparameters for the model, as dictionary.
         """
-        # Create model
-        self.model = model_type(**hparams)
-        # Create logger
-        self.logger = hparams.setdefault('logger', LOGGER)
-
-        # Create loss module
-        self.loss_module = hparams.setdefault('loss', LOSS)
+        hparams = default_hparams.update(hparams)
         
-    def forward(self, trajectory):
-        # Forward function that is run when visualizing the graph
-        return self.model(trajectory)
-        
-    def configure_optimizers(self):
-        # We will support Adam or SGD as optimizers.
-        if self.hparams.optimizer['opt'] == "Adam":
-            # AdamW is Adam with a correct implementation of weight decay (see here for details: https://arxiv.org/pdf/1711.05101.pdf)
-            optimizer = torch.optim.AdamW(
-                self.parameters(), lr=self.hparams.optimizer['lr'])
-        elif self.hparams.optimizer['opt'] == "SGD":
-            optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.optimizer['lr'])
-        else:
-            assert False, f"Unknown optimizer: \"{self.hparams.optimizer_name}\""
+    def training_step(self, batch):
+        inputs, targets = batch
+        self.optimizer.zero_grad()
+        logits = self.model(inputs)
+        loss = self.hparams['LOSS'](logits, targets)
+        loss.backward()        
+        self.optimizer.step()
 
-        if self.hparams.lr_scheduler['lrs'] == "StepLR":
-            scheduler = torch.optim.lr_scheduler.StepLR(
-                optimizer, step_size=self.hparams.lr_scheduler['step_size'], gamma=0.1)
-        if self.hparams.lr_scheduler['lrs'] == "ReduceLROnPlateau":
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, min_lr=self.hparams.lr_scheduler['min_lr'])
-        else:
-            # We will reduce the learning rate by 0.1 after 100 and 150 epochs
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=[100, 150], gamma=0.1)
-        return [optimizer], [scheduler]
-
-    def training_step(self, batch, batch_idx):
-        # "batch" is the output of the training data loader.
-        x, labels = select_features(batch[0], self.hparams['features'])
-        preds = self.model(x)
-        loss = self.loss_module(preds, labels) / len(labels)
-        acc = (preds.argmax(dim=-1) == labels).float().mean()
-
-        # Logs the accuracy per epoch to tensorboard (weighted average over batches)
-        self.log('train_acc', acc, batch_size=1)
-        self.log('train_loss', loss, prog_bar=True)        
-
-        opt = self.optimizers()
-        opt.zero_grad()
-        self.manual_backward(loss)
-        opt.step()
+        accuracy = (logits.argmax(dim=-1) == targets).float().mean()        
+        return {'Loss/train': loss, 'Accuracy/train': accuracy}
     
-        
-    def validation_step(self, batch, batch_idx):
-        x, labels = select_features(batch[0], self.hparams['features'])
-        preds = self.model(x)
-        loss = self.loss_module(preds, labels) / len(labels)
-        acc = (preds.argmax(dim=-1) == labels).float().mean()
-        # By default logs it per epoch (weighted average over batches)
-        self.log('val_acc', acc, batch_size=1, prog_bar=True)
-        self.log('val_loss', loss, batch_size=1, prog_bar=True)
-        
-        # If the selected scheduler is a ReduceLROnPlateau scheduler.
-        sch = self.lr_schedulers()
-        if isinstance(sch, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            sch.step(loss)
+    def validation_step(self, batch):
+        inputs, targets = batch
+        logits = self.model(inputs)
+        loss = self.hparams['LOSS'](logits, targets)
+        accuracy = (logits.argmax(dim=-1) == targets).float().mean()
+        return {'Loss/val': loss, 'Accuracy/val': accuracy}
+
+    def fit(self, model_type, **hparams):
+        # Update default hyperparameters
+        # Loads the most recent checkpoint from indicated version of `model_type`, or creates 
+        # a new model if no version is specified 
+        self.model, self.optimizer, self.data_module = load_checkpoint(model_type, **hparams)        
+        # Create logger
+        self.log = hparams['LOGGER'](**hparams)
+
+        train_loader = self.data_module.train_dataloader()
+        val_loader = self.data_module.val_dataloader()
+
+        # Train the model
+        for epoch in range(self.hparams['MAX_EPOCHS']):
+
+            for batch_ndx, sample in enumerate(train_loader):
+                metrics = self.training_step(sample)
+            
+
+    # If the selected scheduler is a ReduceLROnPlateau scheduler.
 
 
-    def test_step(self, batch, batch_idx):
-        x, labels = select_features(batch, self.hparams['features'])
-        preds = self.model(x)
-        loss = self.loss_module(preds, labels) / len(labels)
-        acc = (preds.argmax(dim=-1) == labels).float().mean()
-
-        self.log('acc', acc, batch_size=1, prog_bar=True)
-
-
-    def predict(self, trajectory_df):
-        with torch.set_grad_enabled(False):            
-            x, _ = select_features(trajectory_df, self.hparams['features'])
-            joint_dist = self.forward(x).softmax(-1)
-            joint_dist = postprocess_joint(joint_dist)
-            return joint_dist
 
 
 def seed_everything(seed):
@@ -111,13 +68,6 @@ def seed_everything(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-
-
-def pairwise(iterable):
-    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
-    a, b = tee(iterable)
-    next(b, None)
-    return enumerate(zip(a, b))
 
 
 def save_state(model: nn.Module, optimizer: Optimizer, epoch: int, path: pathlib.Path, callbacks: List[BaseCallback]):
@@ -251,72 +201,6 @@ def train(model: nn.Module,
 
     for callback in callbacks:
         callback.on_fit_end()
-
-
-def print_parameters_count(model):
-    num_params_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logging.info(f'Number of trainable parameters: {num_params_trainable}')
-
-
-if __name__ == '__main__':
-    is_distributed = init_distributed()
-    local_rank = get_local_rank()
-    args = PARSER.parse_args()
-
-    logging.getLogger().setLevel(logging.CRITICAL if local_rank != 0 or args.silent else logging.INFO)
-
-    logging.info('====== SE(3)-Transformer ======')
-    logging.info('|      Training procedure     |')
-    logging.info('===============================')
-
-    if args.seed is not None:
-        logging.info(f'Using seed {args.seed}')
-        seed_everything(args.seed)
-
-    loggers = [DLLogger(save_dir=args.log_dir, filename=args.dllogger_name)]
-    if args.wandb:
-        loggers.append(WandbLogger(name=f'QM9({args.task})', save_dir=args.log_dir, project='se3-transformer'))
-    logger = LoggerCollection(loggers)
-
-    datamodule = QM9DataModule(**vars(args))
-    model = SE3TransformerPooled(
-        fiber_in=Fiber({0: datamodule.NODE_FEATURE_DIM}),
-        fiber_out=Fiber({0: args.num_degrees * args.num_channels}),
-        fiber_edge=Fiber({0: datamodule.EDGE_FEATURE_DIM}),
-        output_dim=1,
-        tensor_cores=using_tensor_cores(args.amp),  # use Tensor Cores more effectively
-        **vars(args)
-    )
-    loss_fn = nn.L1Loss()
-
-    if args.benchmark:
-        logging.info('Running benchmark mode')
-        world_size = dist.get_world_size() if dist.is_initialized() else 1
-        callbacks = [PerformanceCallback(
-            logger, args.batch_size * world_size, warmup_epochs=1 if args.epochs > 1 else 0
-        )]
-    else:
-        callbacks = [QM9MetricCallback(logger, targets_std=datamodule.targets_std, prefix='validation'),
-                     QM9LRSchedulerCallback(logger, epochs=args.epochs)]
-
-    if is_distributed:
-        gpu_affinity.set_affinity(gpu_id=get_local_rank(), nproc_per_node=torch.cuda.device_count(), scope='socket')
-
-    torch.set_float32_matmul_precision('high')
-    print_parameters_count(model)
-    logger.log_hyperparams(vars(args))
-    increase_l2_fetch_granularity()
-    train(model,
-          loss_fn,
-          datamodule.train_dataloader(),
-          datamodule.val_dataloader(),
-          callbacks,
-          logger,
-          args)
-
-    logging.info('Training finished successfully')
-
-
 
 class NEAT_Trainer:
     def __init__(

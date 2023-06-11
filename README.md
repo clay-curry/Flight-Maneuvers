@@ -19,7 +19,9 @@
 * remaining tasks are documented under the [Steerable Flight Maneuvers](https://github.com/users/clay-curry/projects/1)
 
 ## Description
-Rapid innovation in drone-based technology for commercial and consumer-centric applications have intensified the demand for intelligent airspace monitoring systems capable of [automatic target recognition](https://en.wikipedia.org/wiki/Automatic_target_recognition) (ATR) with post-hoc interpretability. In this project, a proof-of-concept software system is developed to showcase that such functionality can be transformer neural networks can be trained for ATR. 
+Rapid innovation in both commercial and consumer-orientied drone-based technology have intensified the demand for intelligent airspace monitoring systems capable of transponder-free [automatic target recognition](https://en.wikipedia.org/wiki/Automatic_target_recognition) (ATR) with post-hoc interpretability. Adajectly, learning algorithms have seen monumental gains in sequence modeling capabilities through large language models and advances in the mathematical foundations of deep learning.
+
+In this project, a proof-of-concept system is developed to showcase the extent that such methods can be used for ATR, conditioned on having access to the physical trajectory of an aerial target. Of relevance is the question of what learning gains and generalization properties are afforded by imposing certain inductive biases to control the complexity of the model and restrict hypotheses to be consistent with the physical symmetries of the task.
 
 For ease of reproducibility, this project is supported on the Python Package Index with relevant data hosted on Kaggle.
 
@@ -48,8 +50,8 @@ More information (exceeding the scope of this project) regarding the structure o
 `TODO`
 
 ### Observed and Latent Variables
-In our work, 'trajectory' refers to an abstract, time-evolving state containing the kinematic variables (velocity and position) of an aircraft observed with fixed, discrete sampling.
-Coinciding with each state is a non-observable 'maneuver' describing the action taken by the agent to influence control over the state of the aircraft at each timestep.
+In our work, we use 'trajectory' to mean an abstract, time-evolving, kinematic state (velocity and position) characterizing the motion of precisely one target moving through a field-of-view. 
+Consistent with real-world systems, this state is observed with fixed, sampling with an underlying assumption that each state coincides with a non-observable 'maneuver' describing the action taken by the agent to influence control over the state of the aircraft at each timestep.
 The following figure illustrates a top-down view of a particular episode of this process,
 
 ![Overhead](assets/overhead_scene_view.png "Overhead")
@@ -144,3 +146,8 @@ where `COMMAND` is chosen from the following table:
 | train    | instantiates a model and invokes routines for training |
 | evaluate | assesses model performance using a randomized ANOVA procedure |
 | app      | starts a web server on localhost and serves models using Flask |
+
+
+## Acknowledgements
+
+This work was only possible thanks to grant `TODO` and a close partnership between my school and domain experts at Oklahoma City Air Logistics Complex and the [Oklahoma Aerospace and Defense Innovation Institute](https://www.ou.edu/oadii). Such partnerships allow for the symbiotic exchange of ideas required from innovation and modernization, and are likely to facilitate similar works provided continued support.
