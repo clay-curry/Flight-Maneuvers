@@ -3,13 +3,8 @@
 """Input/output checkpointing."""
 
 import os
-import random
-import sys
-import numpy as np
 import json
 import torch
-from flight_maneuvers.data.datamodule import FlightTrajectoryDataModule
-
 import torch
 
 def load_checkpoint(model_type, **hparams):
@@ -20,6 +15,7 @@ def load_checkpoint(model_type, **hparams):
     """
     optimizer_type = hparams['OPTIMIZER']
     datamodule_type = hparams['DATAMODULE']
+
     version = get_version_logs(model_type, hparams)
     version_path = os.path.join(hparams['EXPERIMENT_DIR'], model_type.__qualname__, ' - ', version)
     ckpt_path = os.path.join(version_path, 'checkpoint.pt')
@@ -40,16 +36,16 @@ def load_checkpoint(model_type, **hparams):
         datamodule = datamodule_type(**hparams)
         return model, optimizer, datamodule
 
-def save_checkpoint(model, datamodule, optimizer, hparams):
+def save_model_checkpoint(model, datamodule, optimizer, hparams):
     """Save a model checkpoint."""
-    version = get_version_logs(model, hparams)
-    torch.save(model.state_dict(), os.path.join(version, 'model.pt'))
-    torch.save(optimizer.state_dict(), os.path.join(version, 'optimizer.pt'))
-    torch.save(datamodule.state_dict(), os.path.join(version, 'datamodule.pt'))
+    to_save = { 'model': model.state_dict(), 'datamodule': datamodule.state_dict(), 'optimizer': optimizer.state_dict() }
+
+    version = get_model_path(model, hparams)
+    torch.save(to_save, os.path.join(version, 'model.pt'))
         
-def get_version_logs(model, hparams):
-    # combine model name and experiment dir to create an unambiguous save location
-    model_path = get_model_logs(model, hparams)
+def get_version_logs(model_type, hparams):
+    # combine model type and experiment dir to create an unambiguous save location
+    model_path = get_model_path(model_type, hparams)
     # use hyperparameters to check if learner already exists 
     existing_versions = sorted(os.listdir(model_path))
     for v, version in enumerate(existing_versions):
@@ -60,9 +56,16 @@ def get_version_logs(model, hparams):
     os.makedirs(os.path.join(model_path, version), exist_ok=True)
     return version
 
-def get_model_logs(model, hparams):
-    # combine model name and experiment dir to create an unambiguous save location
-    model_path = os.path.join(hparams['EXPERIMENT_DIR'], model.__qualname__)
+def get_model_hparam_data_ckpt(model, hparams, datamodule):
+    pass
+
+def get_model_hparam_ckpt(model, hparams):
+    pass
+
+def get_model_path(model_type, hparams):
+    """retrieves the log directory for a particular model
+    
+    """
+    model_path = os.path.join(hparams['EXPERIMENT_DIR'], model_type.__qualname__)
     os.makedirs(model_path, exist_ok=True)
     return model_path
-    

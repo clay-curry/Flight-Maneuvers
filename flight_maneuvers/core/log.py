@@ -1,13 +1,24 @@
 
 import inspect
-from tqdm import trange
 from time import sleep
 from click import style
 from columnar import columnar
 
 from torch.utils.tensorboard import SummaryWriter
 
-class ModelAssessmentAndSelectionLogger(SummaryWriter):
+class TensorboardLogger(SummaryWriter):
+    layout = {
+        'Loss': {
+            'train': ['Multiline', ['model1/hparams']],
+            'val': ['Multiline', ['model1/hparams']],
+            'test': ['Margin', ['model1/hparams']]
+        },
+        'Accuracy': {
+            'train': ['Multiline', ['model2/hparams','model1/hparams']],
+            'val': ['Multiline', ['model1/hparams']],
+            'test': ['Margin', ['model1/hparams']]
+        },
+    }
     def __init__(self, save_location):
         trainer = inspect.currentframe().f_back.f_locals['self']
         self.model = trainer.model
@@ -18,8 +29,10 @@ class ModelAssessmentAndSelectionLogger(SummaryWriter):
         super().__init__(save_location)
 
     def add_scalar(self, tag, scalar_value, **kwargs):
-        super(ModelAssessmentAndSelectionLogger, self).add_scalar(tag, scalar_value, **kwargs)
+        super(TensorboardLogger, self).add_scalar(tag, scalar_value, **kwargs)
 
+
+    
 class StandardOutLogger():
     def __init__(self):
         for i in range(100):

@@ -1,4 +1,5 @@
 import torch
+import pandas as pd
 from itertools import tee
 
 def pairwise(iterable):
