@@ -1,6 +1,12 @@
 import torch
 import torch.nn as nn
-from flight_maneuvers.data.preprocessing import pairwise
+from itertools import tee
+
+def pairwise(iterable):
+    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 class ResNetBlock(nn.Module):
 
@@ -77,7 +83,7 @@ class ResNet(nn.Module):
                 kernel_size=[3,3,3],
                 act_fn_name="relu", 
                 block_name="ResNetBlock", 
-                num_maneuvers=10, 
+                num_maneuvers=5, 
                 **kwargs
         ):
         """
@@ -89,15 +95,15 @@ class ResNet(nn.Module):
             block_name - Name of the ResNet block, looked up in "resnet_blocks_by_name"
         """
         super().__init__()
-        state_dim = 12
+        state_dim = 10
         assert block_name in resnet_block_types
         self.act_fn_name = act_fn_name
                 
         # A first convolution on the original image to scale up the channel size
         self.input_net = nn.Sequential(
-                nn.Conv1d(state_dim, c_hidden[0], kernel_size=kernel_size, padding="same", bias=False)
+                nn.Conv1d(state_dim, c_hidden[0], kernel_size=1, padding="same", bias=False)
             ) if resnet_block_types[block_name] == PreActResNetBlock else nn.Sequential(
-                nn.Conv1d(state_dim, c_hidden[0], kernel_size=kernel_size, padding="same", bias=False),
+                nn.Conv1d(state_dim, c_hidden[0], kernel_size=1, padding="same", bias=False),
                 nn.BatchNorm1d(c_hidden[0]),
                 act_fn_by_name[act_fn_name]()
             )
@@ -107,9 +113,9 @@ class ResNet(nn.Module):
             resnet_block_types[block_name](
                 c_in=c_in,
                 act_fn=act_fn_by_name[act_fn_name],
-                k_size=kernel_size,
+                k_size=k,
                 c_out=c_out
-            ) for block_idx, (c_in, c_out) in pairwise(c_hidden)
+            ) for k, (c_in, c_out) in zip(kernel_size, pairwise(c_hidden))
         ])
 
         # Mapping to classification output
@@ -126,9 +132,11 @@ class ResNet(nn.Module):
         # Based on our discussion in Tutorial 4, we should initialize the convolutions according to the activation function
         # Fan-out focuses on the gradient distribution, and is commonly used in ResNets
         for m in self.modules():
+            
             if isinstance(m, nn.BatchNorm1d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+                nn.init.constant_(m.weight, 1) # set gamma to 1
+                nn.init.constant_(m.bias, 0) # set beta to 0
+                               
 
     def forward(self, x):
         x = torch.transpose(x, -1, -2).unsqueeze(0).contiguous()        
@@ -136,3 +144,8 @@ class ResNet(nn.Module):
         x = self.blocks(x).transpose(-1, -2).squeeze(0)
         x = self.output_net(x)
         return x
+    
+if __name__ == "__main__":
+    model = ResNet()
+    print(model)
+    print(model(torch.randn(1000, 10)).shape)

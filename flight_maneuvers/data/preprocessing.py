@@ -1,13 +1,5 @@
 import torch
 import pandas as pd
-from itertools import tee
-
-def pairwise(iterable):
-    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
-    a, b = tee(iterable)
-    next(b, None)
-    return enumerate(zip(a, b))
-
 
 def make_edge_idx(n):
     return torch.stack([
@@ -51,12 +43,12 @@ def get_states_maneuvers(raw_signal):
     """ computes the delta of a trajectory
 
     Args:
-        trajectory: a pandas dataframe with columns t, x, y, z, vx, vy, vz, maneuver
+        trajectory: a pandas dataframe with columns t,  z, vx, vy, vz, maneuver
 
     Returns:
-        a pandas dataframe with columns x, y, z, vx, xy, vz, dx, dy, dz, dvx, dvy, dvz, maneuver
+        a pandas dataframe with columns z, vx, xy, vz, dx, dy, dz, dvx, dvy, dvz, maneuver
     """
-    trajectory = raw_signal[['x', 'y', 'z', 'vx', 'vy', 'vz']]
+    trajectory = raw_signal[['z', 'vx', 'vy', 'vz']]
     trajectory = trajectory.assign(dx=raw_signal['x'].diff())
     trajectory = trajectory.assign(dy=raw_signal['y'].diff())
     trajectory = trajectory.assign(dz=raw_signal['z'].diff())

@@ -1,11 +1,11 @@
 
 __all__ = [ ]
 
-from flight_maneuvers.core import default_hparams
+from flight_maneuvers.core.constants import default_hparams
 
 try:
-    from flight_maneuvers import core
-    __all__ += ['core']
+    from flight_maneuvers.core import constants
+    __all__ += ['constants']
 except ImportError:
     pass
 

@@ -45,6 +45,7 @@ class FlightTrajectoryDataset(Dataset):
 class FlightTrajectoryDataModule:
     
     def __init__(self, **kwargs) -> None:
+        kwargs.setdefault('TRAIN_DATA_DIR', 'maneuver_dataset')
         num_valid = kwargs['VAL_SIZE']
         num_test = kwargs['TEST_SIZE']
         num_train = kwargs['TRAIN_SIZE']

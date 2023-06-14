@@ -6,8 +6,7 @@ from columnar import columnar
 
 from torch.utils.tensorboard import SummaryWriter
 
-class TensorboardLogger(SummaryWriter):
-    layout = {
+tb_layout = {
         'Loss': {
             'train': ['Multiline', ['model1/hparams']],
             'val': ['Multiline', ['model1/hparams']],
@@ -18,18 +17,11 @@ class TensorboardLogger(SummaryWriter):
             'val': ['Multiline', ['model1/hparams']],
             'test': ['Margin', ['model1/hparams']]
         },
-    }
-    def __init__(self, save_location):
-        trainer = inspect.currentframe().f_back.f_locals['self']
-        self.model = trainer.model
-        self.data_module = trainer.data_module
-        self.optim = trainer.optim
-        self.hparams = trainer.hparams
-        self.model_version = trainer.model_version
-        super().__init__(save_location)
+}
 
-    def add_scalar(self, tag, scalar_value, **kwargs):
-        super(TensorboardLogger, self).add_scalar(tag, scalar_value, **kwargs)
+class TensorboardLogger(SummaryWriter):
+    def __init__(self, log_dir='runs'):
+        super().__init__(log_dir)
 
 
     
@@ -40,7 +32,7 @@ class StandardOutLogger():
             TAB_HEADER = ["NAME", "CURRENT", "PAST", "INCREASE", "INCREASE (%)"]
             
             data = [
-                ['Model Complexity', f'{i}', f'{i}', f'{i}', f'{i}'],
+                ['Training Error', f'{i}', f'{i}', f'{i}', f'{i}'],
                 ['Expected Training Error', f'{i}', f'{i}', f'{i}', f'{i}'],
                 ['Expected Train. Err. Variance', f'{i}', f'{i}', f'{i}', f'{i}'],
                 ['Expected Validation Error', f'{i}', f'{i}', f'{i}', f'{i}'],
